@@ -1,7 +1,7 @@
 {
-  "id": "nguyenmanh0404/WeakMedSAM",
-  "title": "WeakMedSAM_medical",
-  "code_file": "run_kaggle.ipynb",
+  "id": "nguyenmanh0404/weakmedsam-training",
+  "title": "WeakMedSAM Training",
+  "code_file": "run.py",
   "language": "python",
   "kernel_type": "script",
   "is_private": "true",
