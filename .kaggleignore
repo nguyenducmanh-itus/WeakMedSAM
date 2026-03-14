@@ -1,0 +1,6 @@
+Brats_cluster/
+BraTS19/
+Brats_Preprocess/
+ckpt/
+__pycache__/
+*.pyc

@@ -1,0 +1,19 @@
+{
+  "id": "nguyenmanh0404/WeakMedSAM",
+  "title": "WeakMedSAM_medical",
+  "code_file": "run_kaggle.ipynb",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "true",
+  "enable_tpu": "false",
+  "enable_internet": "true",
+  "dataset_sources": [
+    "nguyenmanh0404/Vit-ckpt-SAM",
+    "nguyenmanh0404/thesis",
+    "nguyenmanh0404/data-cluster-thesis"
+  ],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}

@@ -45,6 +45,8 @@ def main():
         checkpoint=args.sam_ckpt,
     )
     model = torch.nn.DataParallel(model).cuda()
+    #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    #model = model.to(device)
     if args.samus_ckpt:
         checkpoint = torch.load(args.samus_ckpt)
         model.load_state_dict(checkpoint)

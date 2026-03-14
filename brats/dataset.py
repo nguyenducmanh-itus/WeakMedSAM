@@ -96,7 +96,10 @@ class BraTSDataset(Dataset):
         seg[seg != 0] = 1
 
         idx = self.imgs[index].split("/")
-        idx = idx[-2] + "-" + os.path.splitext(idx[-1])[0]
+        if len(idx) >= 2:
+            idx = idx[-2] + "-" + os.path.splitext(idx[-1])[0]
+        else:
+            idx = os.path.splitext(idx[-1])[0]
 
         if self.child_classes != 0:
             clab = torch.zeros(self.child_classes + 1).float()
