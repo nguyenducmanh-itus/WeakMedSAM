@@ -9,7 +9,7 @@
   "enable_tpu": "false",
   "enable_internet": "true",
   "dataset_sources": [
-    "nguyenmanh0404/Vit-ckpt-SAM",
+    "nguyenmanh0404/vit-ckpt-sam",
     "nguyenmanh0404/thesis",
     "nguyenmanh0404/data-cluster-thesis"
   ],

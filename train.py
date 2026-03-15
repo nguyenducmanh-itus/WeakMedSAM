@@ -10,6 +10,14 @@ from utils.pytuils import AverageMeter
 import torch.nn.functional as F
 from utils.metrics import dice
 
+import os
+print("--- KIỂM TRA ĐƯỜNG DẪN THỰC TẾ ---")
+for root, dirs, files in os.walk('/kaggle/input'):
+    for file in files:
+        if file.endswith('.pth') or file.endswith('.bin'):
+            print(os.path.join(root, file))
+print("-----------------------------------")
+
 
 def main():
     parser = argparse.ArgumentParser()
