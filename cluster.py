@@ -21,7 +21,7 @@ if __name__ == "__main__":
     parser.add_argument("--gpus", type=str)
     args = parser.parse_args()
     print(args)
-
+    
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpus
 
     os.makedirs(args.save_path, exist_ok=True)
@@ -31,7 +31,7 @@ if __name__ == "__main__":
     resnet = resnet18(weights="DEFAULT").to(device)
     resnet.fc = torch.nn.Identity()
     resnet.eval()
-
+    
     data_module = importlib.import_module(f"{args.data_module}.dataset")
     dataset = data_module.get_all_dataset(args.data_path, 0, "")
     data_loader = DataLoader(
@@ -47,14 +47,14 @@ if __name__ == "__main__":
     for _ in range(args.parent_classes):
         idx_list.append([])
 
-    all_idx_list = []
+    all_idx_list = set()
 
     with torch.no_grad():
         for i, pack in tqdm(enumerate(data_loader), ncols=80, total=len(data_loader)):
             imgs = pack["img"]
             lab = pack["plab"]
             idxs = pack["idx"]
-            all_idx_list += idxs
+            all_idx_list.update(idxs.tolist())
 
             features = resnet(imgs.to(device)).cpu().numpy()
 
@@ -64,7 +64,7 @@ if __name__ == "__main__":
                         if class_features[c] is None:
                             class_features[c] = []
                         class_features[c].append(f)
-                        idx_list[c].append(idxs[b])
+                        idx_list[c].append(idxs[b].item())
 
     save_map = {idx: np.zeros(args.parent_classes) for idx in all_idx_list}
 
