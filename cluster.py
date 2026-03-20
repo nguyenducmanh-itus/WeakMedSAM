@@ -54,7 +54,7 @@ if __name__ == "__main__":
             imgs = pack["img"]
             lab = pack["plab"]
             idxs = pack["idx"]
-            all_idx_list.update(idxs.tolist())
+            all_idx_list.update(idxs)
 
             features = resnet(imgs.to(device)).cpu().numpy()
 
@@ -64,13 +64,20 @@ if __name__ == "__main__":
                         if class_features[c] is None:
                             class_features[c] = []
                         class_features[c].append(f)
-                        idx_list[c].append(idxs[b].item())
+                        idx_list[c].append(idxs[b])
 
     save_map = {idx: np.zeros(args.parent_classes) for idx in all_idx_list}
 
     for c in range(args.parent_classes):
+        if class_features[c] is None or len(class_features[c]) == 0:
+            print(f"No features for class {c}, skipping clustering.")
+            continue
+        features_array = np.array(class_features[c])
+        if np.isnan(features_array).any():
+            print(f"NaN features for class {c}, skipping clustering.")
+            continue
         kmeans = KMeans(n_clusters=args.child_classes)
-        kmeans.fit(class_features[c])
+        kmeans.fit(features_array)
         lbs = list(kmeans.labels_)
 
         for i, idx in enumerate(idx_list[c]):

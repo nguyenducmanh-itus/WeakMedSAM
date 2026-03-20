@@ -10,7 +10,7 @@
   "enable_internet": "true",
   "dataset_sources": [
     "nguyenmanh0404/vit-ckpt-sam",
-    "nguyenmanh0404/thesis",
+    "nguyenmanh0404/fracatlas-dataset",
     "nguyenmanh0404/data-cluster-thesis"
   ],
   "competition_sources": [],

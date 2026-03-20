@@ -34,10 +34,14 @@ def main():
     args = parser.parse_args()
     print(args)
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpus
+    if args.gpus != '-1':
+        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpus
+
+    device = torch.device("cuda" if torch.cuda.is_available() and args.gpus != '-1' else "cpu")
 
     torch.manual_seed(args.seed)
-    torch.cuda.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(args.seed)
     torch.backends.cudnn.deterministic = True
 
     model = samus_model_registry["vit_b"](
@@ -45,9 +49,8 @@ def main():
         child_classes=args.child_classes,
         checkpoint=args.sam_ckpt,
     )
-    model = torch.nn.DataParallel(model).cuda()
-    #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    #model = model.to(device)
+    # model = torch.nn.DataParallel(model).cuda()
+    model = model.to(device)
     if args.samus_ckpt:
         checkpoint = torch.load(args.samus_ckpt)
         model.load_state_dict(checkpoint)
@@ -99,9 +102,10 @@ def main():
             train_loader_iter = iter(train_loader)
             datapack = next(train_loader_iter)
 
-        imgs = datapack["img"].cuda()
-        parent_labs = datapack["plab"].cuda()
-        child_labs = datapack["clab"].cuda()
+        imgs = datapack["img"].to(device)
+        parent_labs = datapack["plab"].to(device)
+        if args.child_classes > 0:
+            child_labs = datapack["clab"].to(device)
 
         parent_x, child_x, _ = model(imgs)
 
@@ -110,8 +114,11 @@ def main():
             parent_labs,
         )
 
-        child_loss = F.binary_cross_entropy_with_logits(child_x, child_labs)
-        loss = parent_loss + args.child_weight * child_loss
+        if args.child_classes > 0:
+            child_loss = F.binary_cross_entropy_with_logits(child_x, child_labs)
+            loss = parent_loss + args.child_weight * child_loss
+        else:
+            loss = parent_loss
 
         loss.backward()
         optimizer.step()
@@ -136,8 +143,8 @@ def main():
             val_score = AverageMeter()
             with torch.no_grad():
                 for pack in val_loader:
-                    imgs = pack["img"].cuda()
-                    labs = pack["plab"].float().cuda()
+                    imgs = pack["img"].to(device)
+                    labs = pack["plab"].float().to(device)
                     x, _, _ = model(imgs)
                     val_loss.add(F.binary_cross_entropy_with_logits(x, labs).item())
                     pred = (torch.sigmoid(x) > 0.5).float()
@@ -157,7 +164,7 @@ def main():
         )
 
     torch.save(
-        model.module.state_dict(),
+        model.state_dict(),
         os.path.join(args.logdir, args.index, f"{args.index}.pth"),
         _use_new_zipfile_serialization=False,
     )

@@ -14,6 +14,9 @@ pic_size = 256
 
 
 def trim(img: Image.Image, seg: Image.Image):
+    #img.mode -> (ways to demonstrate image (ex : RGB, GrayScale(L), 1 : binary pixels))
+    #img.size -> returns width and height of image
+    #
     bg = Image.new(img.mode, img.size, img.getpixel((0, 0)))
     diff = ImageChops.difference(img, bg)
     diff = ImageChops.add(diff, diff)

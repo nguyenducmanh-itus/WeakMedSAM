@@ -10,26 +10,31 @@ print("2. Di chuyển vào thư mục dự án...")
 os.chdir("/kaggle/working/my_project")
 
 print("3. Cài đặt các thư viện cần thiết...")
-os.system("pip install nibabel monai segment-anything")
+os.system("pip install nibabel monai segment-anything scikit-learn pandas torchvision")
 
-print("4. Bắt đầu quá trình huấn luyện mô hình...")
-# Đặt toàn bộ chuỗi lệnh của bạn vào một biến string
-cmd = (
-    "python cluster.py "
-    "--batch_size 256 "
-    "--data_path '/kaggle/input/datasets/nguyenmanh0404/thesis' "
-    "--data_module brats "
+print("4. Tải SAM checkpoint...")
+os.system("mkdir -p /kaggle/working/my_project/ckpt")
+os.system("wget https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth -P /kaggle/working/my_project/ckpt/")
+
+
+print("6. Bắt đầu huấn luyện mô hình...")
+cmd_train = (
+    "python train.py "
+    "--seed 42 "
+    "--sam_ckpt '/kaggle/working/my_project/ckpt/sam_vit_b_01ec64.pth' "
+    "--lr 1e-4 "
+    "--batch_size 8 "  # Giảm batch_size cho GPU Kaggle
+    "--max_epochs 10 "
+    "--val_iters 3000 "
+    "--index fracatlas_kaggle "
+    "--data_path '/kaggle/input/fracatlas' "
+    "--data_module frac_atlas "
     "--parent_classes 1 "
-    "--child_classes 8 "
-    "--save_path '/kaggle/working/Cluster_dataset/' "
+    "--child_classes 10 "
+    "--child_weight 0.5 "
+    "--cluster_file '/kaggle/input/fracatlas-dataset' "
+    "--logdir '/kaggle/working/logs' "
     "--gpus 0"
 )
-# Thực thi chuỗi lệnh
-os.system(cmd)
+os.system(cmd_train)
 
-# import os
-# file_path = '/kaggle/input/datasets/nguyenmanh0404/data-cluster-thesis/brats-8.bin'
-
-# print(f"Kích thước file: {os.path.getsize(file_path)} bytes")
-# with open(file_path, "rb") as f:
-#     print(f"20 bytes đầu tiên: {f.read(20)}")
