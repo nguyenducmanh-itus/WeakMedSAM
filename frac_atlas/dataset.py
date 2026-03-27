@@ -12,7 +12,7 @@ class FracAtlasDataset(Dataset):
         self.data_path = data_path
         self.df = df
         self.transform = transform or T.Compose([
-            T.Resize((256, 256)),
+            T.Resize((512, 512)),
             T.ToTensor(),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
