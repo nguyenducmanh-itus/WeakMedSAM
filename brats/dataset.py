@@ -14,11 +14,14 @@ pic_size = 256
 
 
 def trim(img: Image.Image, seg: Image.Image):
-    #img.mode -> (ways to demonstrate image (ex : RGB, GrayScale(L), 1 : binary pixels))
-    #img.size -> returns width and height of image
-    #img.getpixel((x, y)) -> return pixel in coordinate (x, y), ex : (62, 15, 25)
-    #ImageChops.difference(img_1, img_2) -> return a image demonstrate difference between img1 and img2
-    #ImageChops.add(img_1, img_2) -> return a image concanate img1 and img2 
+    """Following code create a new image with : 
+        - color scale: Gray
+        - size : The sized of image being passed in.
+        - image is created with all pixel euqal value of 
+                pixel of arguements in position (0, 0)
+        
+        
+    """ 
     bg = Image.new(img.mode, img.size, img.getpixel((0, 0)))
     diff = ImageChops.difference(img, bg)
     diff = ImageChops.add(diff, diff)
