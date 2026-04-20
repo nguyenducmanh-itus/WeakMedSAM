@@ -41,29 +41,35 @@ if __name__ == "__main__":
         pin_memory=True,
         num_workers=0,
     )
-
+    #Tạo list để lưu danh sách các feature ảnh thuộc về lớp đó
     class_features = [None] * args.parent_classes
+    #Danh sách chỉ mục ảnh thuộc về lớp đó.
     idx_list = []
     for _ in range(args.parent_classes):
         idx_list.append([])
-
+    #biến lưu tất cả các chỉ mục ảnh
     all_idx_list = set()
 
     with torch.no_grad():
+        #Load 1 batch ảnh
         for i, pack in tqdm(enumerate(data_loader), ncols=80, total=len(data_loader)):
             imgs = pack["img"]
             lab = pack["plab"]
             idxs = pack["idx"]
             all_idx_list.update(idxs)
-
+            #Trích xuất feature maps của các ảnh trong batch ảnh
             features = resnet(imgs.to(device)).cpu().numpy()
-
+            #Lấy từng feature map
             for b, f in enumerate(features):
+                #Kiểm tra xem feature map thứ b có thuộc về lớp thứ c hay không
                 for c in range(args.parent_classes):
+                    #Nếu có lưu feature map đó vào danh sách thông tin các feature map
+                    #của lớp c
                     if lab[b, c] != 0:
                         if class_features[c] is None:
                             class_features[c] = []
                         class_features[c].append(f)
+                        #Lưu thông tin chỉ mục của ảnh 
                         idx_list[c].append(idxs[b])
 
     save_map = {idx: np.zeros(args.parent_classes) for idx in all_idx_list}
@@ -82,7 +88,7 @@ if __name__ == "__main__":
 
         for i, idx in enumerate(idx_list[c]):
             save_map[idx][c] = lbs[i]
-
+    #Save_map là một method set() chứa 
     with open(
         os.path.join(
             args.save_path, f"{str(args.data_module)}-{args.child_classes}.bin"

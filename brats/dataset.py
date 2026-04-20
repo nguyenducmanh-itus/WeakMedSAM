@@ -19,8 +19,7 @@ def trim(img: Image.Image, seg: Image.Image):
         - size : The sized of image being passed in.
         - image is created with all pixel euqal value of 
                 pixel of arguements in position (0, 0)
-        
-        
+        - 
     """ 
     bg = Image.new(img.mode, img.size, img.getpixel((0, 0)))
     diff = ImageChops.difference(img, bg)
@@ -34,26 +33,36 @@ def trim(img: Image.Image, seg: Image.Image):
 
 def aug(img: Image.Image, seg: Image.Image, lab: Image.Image = None):
     img, seg = trim(img, seg)
+    #create a angle A to rotate
     rotate_angle = random.randrange(-20, 20)
+    #rotate image and segmentation mask with angle A
     img = TF.rotate(img, rotate_angle)
     seg = TF.rotate(seg, rotate_angle)
+    #if extra lab exist resize lab following image size and rotate
     if lab:
         lab = lab.resize(img.size)
         lab = TF.rotate(lab, rotate_angle)
+    #Get information of random crop
+    #(top, left, height, width)
     params = T.RandomResizedCrop(pic_size).get_params(
         img, scale=(0.5, 1.0), ratio=(0.7, 1.3)
     )
+    #crop image and seg following params
     img = TF.crop(img, *params)
     seg = TF.crop(seg, *params)
     if lab:
         lab = TF.crop(lab, *params)
+    #Create a object to change brightness and contrast
     jitter = T.ColorJitter(brightness=0.5, contrast=0.5)
+    #Change brightness and contrast of image
     img = jitter(img)
     if random.random() > 0.5:
+        #Horizontally flip image and seg
         img = TF.hflip(img)
         seg = TF.hflip(seg)
         if lab:
             lab = TF.hflip(lab)
+    #Transform image and seg to tensor
     img = TF.to_tensor(img.resize((pic_size, pic_size)))
     seg = TF.to_tensor(seg.resize((pic_size, pic_size), Image.BILINEAR))
     seg[seg > 0.5] = 1
@@ -85,14 +94,16 @@ class BraTSDataset(Dataset):
         self.imgs = imgs
         self.segs = segs
         self.train = train
+        #If cluster_file is exists
         if child_classes != 0:
+            #Deserialize cluster_file, convert it into a original object
             with open(cluster_file, "rb") as f:
                 self.clabs = pickle.load(f)
         self.child_classes = child_classes
-
+    #get number of images
     def __len__(self):
         return len(self.imgs)
-
+    #Get each item of images
     def __getitem__(self, index: Any) -> Any:
         img = Image.open(self.imgs[index]).convert("RGB")
         seg = Image.open(self.segs[index]).convert("F")
@@ -102,7 +113,6 @@ class BraTSDataset(Dataset):
 
         img, seg = aug(img, seg) if self.train else no_aug(img, seg)
         seg[seg != 0] = 1
-
         idx = self.imgs[index].split("/")
         if len(idx) >= 2:
             idx = idx[-2] + "-" + os.path.splitext(idx[-1])[0]
@@ -199,6 +209,7 @@ def get_all_dataset(data_path: str, child_classes: int, cluster_file: str) -> Da
     dataset = BraTSDataset(
         *get_files(
             sample_name.strip()
+            #Lấy tất cả folder chứa ảnh được lưu trong file .txt
             for sample_name in (
                 list(open("brats/splits/train.txt", "r"))
                 + list(open("brats/splits/val.txt", "r"))

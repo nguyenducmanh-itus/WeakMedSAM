@@ -1,3 +1,4 @@
+#This file is designed to visiualize same disease in different organs
 import pandas as pd
 from PIL import Image, ImageDraw
 import math

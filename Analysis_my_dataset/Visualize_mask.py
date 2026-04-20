@@ -26,7 +26,6 @@ alpha = 0.5
 result = cv.addWeighted(overlay, alpha, img, 1 - alpha, 0)
 mask = cv.resize(mask, (512, 512), interpolation = cv.INTER_AREA)
 result = cv.resize(result, (512, 512), interpolation = cv.INTER_AREA)
-# ===== 6. Show =====
 cv.imshow("Mask", mask)
 cv.imshow("Overlay", result)
 cv.waitKey(0)
