@@ -1,6 +1,9 @@
-import torch 
-import numpy as np
-my_set = {"a", "b", "c", "d"}
-save_map = {idx : np.zeros(8) for idx in my_set}
-save_map["a"][5] = np.arange(1, 10, 1)
-print(save_map["a"[5]])
+from tqdm import tqdm
+import time
+from utils.pytuils import AverageMeter
+import pickle
+
+with open("./output/btxrd-8.bin", "rb") as f :
+    cluster = pickle.load(f)
+    
+print(cluster)

@@ -33,7 +33,7 @@ if __name__ == "__main__":
     resnet.eval()
     
     data_module = importlib.import_module(f"{args.data_module}.dataset")
-    dataset = data_module.get_all_dataset(args.data_path, 0, "")
+    dataset = data_module.get_all_dataset(args.data_path, "", "osteochondroma", "other mt", 0)
     data_loader = DataLoader(
         dataset,
         args.batch_size,
@@ -62,15 +62,15 @@ if __name__ == "__main__":
             #Lấy từng feature map
             for b, f in enumerate(features):
                 #Kiểm tra xem feature map thứ b có thuộc về lớp thứ c hay không
-                for c in range(args.parent_classes):
+                for c in range(1, args.parent_classes + 1):
                     #Nếu có lưu feature map đó vào danh sách thông tin các feature map
                     #của lớp c
                     if lab[b, c] != 0:
-                        if class_features[c] is None:
-                            class_features[c] = []
-                        class_features[c].append(f)
+                        if class_features[c - 1] is None:
+                            class_features[c - 1] = []
+                        class_features[c - 1].append(f)
                         #Lưu thông tin chỉ mục của ảnh 
-                        idx_list[c].append(idxs[b])
+                        idx_list[c - 1].append(idxs[b])
 
     save_map = {idx: np.zeros(args.parent_classes) for idx in all_idx_list}
 
@@ -87,7 +87,7 @@ if __name__ == "__main__":
         lbs = list(kmeans.labels_)
 
         for i, idx in enumerate(idx_list[c]):
-            save_map[idx][c] = lbs[i]
+            save_map[idx][c] = lbs[i] + 1
     #Save_map là một method set() chứa 
     with open(
         os.path.join(
