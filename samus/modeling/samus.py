@@ -87,7 +87,8 @@ class Samus(nn.Module):
         self.mask_decoder = mask_decoder
         self.parent_fc = nn.Conv2d(EMBED_SIZE, self.parent_classes, 1, bias=False)
         self.child_fc = nn.Conv2d(
-            EMBED_SIZE, self.parent_classes * self.child_classes + 1, 1, bias=False
+            #source : self.parent_classes * self.child_classes
+            EMBED_SIZE, self.parent_classes * self.child_classes, 1, bias=False
         )
         self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
         self.register_buffer(

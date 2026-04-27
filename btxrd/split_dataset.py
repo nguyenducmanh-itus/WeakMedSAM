@@ -9,8 +9,8 @@ from PIL import Image
 from pathlib import Path
 
 random.seed(42)
-df_path = "./data/BTXRD/dataset.xlsx"
-cluster_path = r"C:/Users/ADMIN/OneDrive - VNU-HCMUS/CNTT-HK8/Thesis/WeakMedSAM/output/btxrd-8.bin"
+df_path = r"C:/Users/ADMIN/OneDrive - VNU-HCMUS/CNTT-HK8/Thesis/WeakMedSAM/data/BTXRD/dataset.xlsx"
+cluster_path = r"C:/Users/ADMIN/OneDrive - VNU-HCMUS/CNTT-HK8/Thesis/WeakMedSAM/output/cluster_non_tumor/btxrd-8.bin"
 #Get all dataset and save in all.txt
 def get_list_all_images(data_path = "./data/BTXRD/dataset.xlsx") :     
     df = pd.read_excel(data_path)
@@ -76,30 +76,34 @@ def split_dataset_classifier(cluster_file,
         #add a list to list
         train_split.extend(images[ : n_train])
         val_split.extend(images[n_train : n_train + n_val])
-        test_split.extend(images[n_train + n_val : ])    
-    return train_split, val_split, test_split
+        test_split.extend(images[n_train + n_val : ])
+        train = [train_image + ".jpeg" for train_image in train_split]
+        val = [val_image + ".jpeg" for val_image in val_split]
+        test = [test_image + ".jpeg" for test_image in test_split]    
+    return train, val, test
 #------Save datasets for classifier---------#
 def dictionary_list_split(cluster_path, df_path) :
     train_split, val_split, test_split = split_dataset_classifier(cluster_path, df_path)
-    list_non_images = get_listimg_nontumor(df_path)
-    non_train_split, non_val_split, non_test_split = split_non_tumors(list_non_images)
-    train_split.extend(non_train_split)
-    val_split.extend(non_val_split)
-    test_split.extend(non_test_split)
-    return {"./splits/classifier_split/train.txt" : train_split, 
-            "./splits/classifier_split/val.txt" : val_split, 
-            "./splits/classifier_split/test.txt" : test_split}
+    #list_non_images = get_listimg_nontumor(df_path)
+    #non_train_split, non_val_split, non_test_split = split_non_tumors(list_non_images)
+    #train_split.extend(non_train_split)
+    #val_split.extend(non_val_split)
+    #test_split.extend(non_test_split)
+    return {"./splits/group_non/train.txt" : train_split, 
+            "./splits/group_non/val.txt" : val_split, 
+            "./splits/group_non/test.txt" : test_split}
 
     
-def save_path(save_list, data_path = "./data/BTXRD/images") :
+def save_path(save_list, data_path = "/kaggle/input/datasets/nguyenmanh0404/btxrd-datasets/images") :
     for name, list_imgs in save_list.items() :
         with open(name, "w") as f :
             for i in list_imgs :
                 path = os.path.join(data_path, i)
                 path = path.replace("\\", "/")
                 f.writelines(path + "\n")
-                        
-#-----Split dataset for U-net stage-------#
+
 save_list  = dictionary_list_split(cluster_path, df_path)
-save_path(save_list)
+save_path(save_list)                       
+#-----Split dataset for U-net stage-------#
+
 

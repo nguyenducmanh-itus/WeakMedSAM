@@ -42,10 +42,10 @@ if __name__ == "__main__":
         num_workers=0,
     )
     #Tạo list để lưu danh sách các feature ảnh thuộc về lớp đó
-    class_features = [None] * args.parent_classes
+    class_features = [None] * (args.parent_classes + 1)
     #Danh sách chỉ mục ảnh thuộc về lớp đó.
     idx_list = []
-    for _ in range(args.parent_classes):
+    for _ in range(args.parent_classes + 1):
         idx_list.append([])
     #biến lưu tất cả các chỉ mục ảnh
     all_idx_list = set()
@@ -62,19 +62,19 @@ if __name__ == "__main__":
             #Lấy từng feature map
             for b, f in enumerate(features):
                 #Kiểm tra xem feature map thứ b có thuộc về lớp thứ c hay không
-                for c in range(1, args.parent_classes + 1):
+                for c in range(args.parent_classes + 1):
                     #Nếu có lưu feature map đó vào danh sách thông tin các feature map
                     #của lớp c
                     if lab[b, c] != 0:
-                        if class_features[c - 1] is None:
-                            class_features[c - 1] = []
-                        class_features[c - 1].append(f)
+                        if class_features[c] is None:
+                            class_features[c] = []
+                        class_features[c].append(f)
                         #Lưu thông tin chỉ mục của ảnh 
-                        idx_list[c - 1].append(idxs[b])
+                        idx_list[c].append(idxs[b])
 
-    save_map = {idx: np.zeros(args.parent_classes) for idx in all_idx_list}
+    save_map = {idx: np.zeros(args.parent_classes + 1) for idx in all_idx_list}
 
-    for c in range(args.parent_classes):
+    for c in range(args.parent_classes + 1):
         if class_features[c] is None or len(class_features[c]) == 0:
             print(f"No features for class {c}, skipping clustering.")
             continue

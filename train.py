@@ -33,7 +33,6 @@ def main():
     parser.add_argument("--gpus", type=str)
     args = parser.parse_args()
     print(args)
-
     if args.gpus != '-1':
         os.environ["CUDA_VISIBLE_DEVICES"] = args.gpus
 
@@ -49,7 +48,7 @@ def main():
     torch.backends.cudnn.deterministic = True
     #Init model
     model = samus_model_registry["vit_b"](
-        parent_classes=args.parent_classes,
+        parent_classes=args.parent_classes + 1,
         child_classes=args.child_classes,
         checkpoint=args.sam_ckpt,
     )
@@ -66,7 +65,7 @@ def main():
     data_module = importlib.import_module(f"{args.data_module}.dataset")
     #Get train and valid dataset
     train_dataset, val_dataset, _ = data_module.get_dataset(
-        args.data_path, args.child_classes, args.cluster_file
+        args.cluster_file, "osteochondroma", "other mt", args.child_classes
     )
     #Get train loader
     train_loader = DataLoader(
@@ -131,7 +130,7 @@ def main():
 
         #Get batch prediction results of the parent label and children label respectively.
         parent_x, child_x, _ = model(imgs)
-
+        
         #Calculate loss of parent classifier
         parent_loss = F.binary_cross_entropy_with_logits(
             parent_x,

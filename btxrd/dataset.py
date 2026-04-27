@@ -53,7 +53,7 @@ class BTRXD_Dataset(Dataset) :
         image = Image.open(path).convert("RGB")
         image = image.resize((pic_size, pic_size))
         return TF.to_tensor(image)
-    
+            
     def __getitem__(self, index) :
         #Load image converted
         img = self.load_image(self.images[index])
@@ -70,14 +70,12 @@ class BTRXD_Dataset(Dataset) :
             plab[self.label_map[col_plab.item()]] = 1
             pclass =  self.label_map[col_plab.item()]
             have_pclass = True
-        else : 
+        else :
             plab[0] = 1
-        if self.child_classes != 0 : 
-            clab = torch.zeros(self.child_classes * self.parent_classes + 1).float()
-            if have_pclass == True : 
-                clab[self.clabs[idx][pclass] + 1] = 1 
-            else : 
-                clab[0] = 1
+            pclass = 0
+        if self.child_classes != 0 :
+            clab = torch.zeros(self.child_classes * (self.parent_classes + 1)).float()
+            clab[(int(self.clabs[idx][pclass]) - 1) + pclass * 8] = 1
             return {
                 "img": img,
                 "plab": plab,
@@ -93,8 +91,30 @@ class BTRXD_Dataset(Dataset) :
                 "fname": self.images[index],
             }                        
         
-def get_dataset() :
-    return 
+def get_dataset(cluster_file : str, begin_features : str, 
+                end_features : str,child_classes : int) -> tuple[Dataset, Dataset, Dataset] :
+    train_dataset =  BTRXD_Dataset([sample_t.strip() 
+                      for sample_t in open("./btxrd/splits/group_non/train.txt", "r")], 
+                      cluster_file, 
+                      begin_features, 
+                      end_features, 
+                      child_classes
+    )
+    val_dataset =  BTRXD_Dataset([sample_v.strip() 
+                      for sample_v in open("./btxrd/splits/group_non/val.txt", "r")], 
+                      cluster_file, 
+                      begin_features, 
+                      end_features, 
+                      child_classes
+    )
+    test_dataset =  BTRXD_Dataset([sample_tt.strip() 
+                      for sample_tt in open("./btxrd/splits/group_non/test.txt", "r")], 
+                      cluster_file, 
+                      begin_features, 
+                      end_features, 
+                      child_classes
+    )
+    return train_dataset, val_dataset, test_dataset 
         
 
 def get_all_dataset(data_path, cluster_file, 
