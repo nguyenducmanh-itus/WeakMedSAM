@@ -9,7 +9,7 @@ from PIL import Image
 from pathlib import Path
 
 random.seed(42)
-df_path = r"C:/Users/ADMIN/OneDrive - VNU-HCMUS/CNTT-HK8/Thesis/WeakMedSAM/data/BTXRD/dataset.xlsx"
+#df_path = r"C:/Users/ADMIN/OneDrive - VNU-HCMUS/CNTT-HK8/Thesis/WeakMedSAM/data/BTXRD/dataset.xlsx"
 cluster_path = r"C:/Users/ADMIN/OneDrive - VNU-HCMUS/CNTT-HK8/Thesis/WeakMedSAM/output/cluster_non_tumor/btxrd-8.bin"
 #Get all dataset and save in all.txt
 def get_list_all_images(data_path = "./data/BTXRD/dataset.xlsx") :     
@@ -57,14 +57,13 @@ def split_non_tumors(images_list,
     return train_split, val_split, test_split
 #-----Split dataset for classification stage-------#
 #Ratio 8-1-1
-def split_dataset_classifier(cluster_file, 
-                             df_path, 
+def split_dataset_classifier(cluster_file,  
                              train_ratio = 0.8, 
                              val_ratio = 0.1, 
                              test_ratio = 0.1) :
-    train_split = []
-    val_split = []
-    test_split = []
+    train = []
+    val = []
+    test = []
     grouped = group_same_PC(cluster_file) 
     for parent, list_images in grouped.items() :
         images =  list_images.copy()
@@ -74,36 +73,38 @@ def split_dataset_classifier(cluster_file,
         n_val = int(val_ratio * n)
         n_test = int(test_ratio * n)
         #add a list to list
-        train_split.extend(images[ : n_train])
-        val_split.extend(images[n_train : n_train + n_val])
-        test_split.extend(images[n_train + n_val : ])
-        train = [train_image + ".jpeg" for train_image in train_split]
-        val = [val_image + ".jpeg" for val_image in val_split]
-        test = [test_image + ".jpeg" for test_image in test_split]    
+        train.extend(images[ : n_train])
+        val.extend(images[n_train : n_train + n_val])
+        test.extend(images[n_train + n_val : ])
+        # train = [train_image + ".jpeg" for train_image in train_split]
+        # val = [val_image + ".jpeg" for val_image in val_split]
+        # test = [test_image + ".jpeg" for test_image in test_split]    
     return train, val, test
 #------Save datasets for classifier---------#
-def dictionary_list_split(cluster_path, df_path) :
-    train_split, val_split, test_split = split_dataset_classifier(cluster_path, df_path)
+def dictionary_list_split(cluster_path) :
+    train, val, test = split_dataset_classifier(cluster_path)
     #list_non_images = get_listimg_nontumor(df_path)
     #non_train_split, non_val_split, non_test_split = split_non_tumors(list_non_images)
     #train_split.extend(non_train_split)
     #val_split.extend(non_val_split)
     #test_split.extend(non_test_split)
-    return {"./splits/group_non/train.txt" : train_split, 
-            "./splits/group_non/val.txt" : val_split, 
-            "./splits/group_non/test.txt" : test_split}
+    return {"./splits/group_non_kaggle/train.txt" : train, 
+            "./splits/group_non_kaggle/val.txt" : val, 
+            "./splits/group_non_kaggle/test.txt" : test}
 
     
-def save_path(save_list, data_path = "/kaggle/input/datasets/nguyenmanh0404/btxrd-datasets/images") :
+def save_path(cluster_path, data_path) :
+    save_list = dictionary_list_split(cluster_path)
     for name, list_imgs in save_list.items() :
+        os.makedirs(os.path.dirname(name), exist_ok = True)
         with open(name, "w") as f :
             for i in list_imgs :
                 path = os.path.join(data_path, i)
                 path = path.replace("\\", "/")
                 f.writelines(path + "\n")
 
-save_list  = dictionary_list_split(cluster_path, df_path)
-save_path(save_list)                       
+                    
 #-----Split dataset for U-net stage-------#
-
+data_path = "kaggle/input/datasets/nguyenmanh0404/btxrd-datasets/images"
+save_path(cluster_path, data_path)
 
