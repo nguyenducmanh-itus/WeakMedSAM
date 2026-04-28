@@ -28,6 +28,7 @@ def main():
     parser.add_argument("--child_classes", type=int)
     parser.add_argument("--child_weight", type=float)
     parser.add_argument("--cluster_file", type=str)
+    parser.add_argument("--dataframe_path", type = str)
     parser.add_argument("--logdir", type=str)
     parser.add_argument("--seed", type=int)
     parser.add_argument("--gpus", type=str)
@@ -65,7 +66,12 @@ def main():
     data_module = importlib.import_module(f"{args.data_module}.dataset")
     #Get train and valid dataset
     train_dataset, val_dataset, _ = data_module.get_dataset(
-        args.cluster_file, "osteochondroma", "other mt", args.child_classes
+        cluster_file = args.cluster_file, 
+        begin_feature = "osteochondroma", 
+        end_feature = "other mt", 
+        child_classes = args.child_classes, 
+        #This argument below adapt with dataset module
+        df_path = args.dataframe_path
     )
     #Get train loader
     train_loader = DataLoader(

@@ -94,21 +94,21 @@ class BTRXD_Dataset(Dataset) :
 def get_dataset(cluster_file : str, begin_features : str, 
                 end_features : str,child_classes : int) -> tuple[Dataset, Dataset, Dataset] :
     train_dataset =  BTRXD_Dataset([sample_t.strip() 
-                      for sample_t in open("./btxrd/splits/group_non/train.txt", "r")], 
+                      for sample_t in open("./btxrd/splits/group_non_kaggle/train.txt", "r")], 
                       cluster_file, 
                       begin_features, 
                       end_features, 
                       child_classes
     )
     val_dataset =  BTRXD_Dataset([sample_v.strip() 
-                      for sample_v in open("./btxrd/splits/group_non/val.txt", "r")], 
+                      for sample_v in open("./btxrd/splits/group_non_kaggle/val.txt", "r")], 
                       cluster_file, 
                       begin_features, 
                       end_features, 
                       child_classes
     )
     test_dataset =  BTRXD_Dataset([sample_tt.strip() 
-                      for sample_tt in open("./btxrd/splits/group_non/test.txt", "r")], 
+                      for sample_tt in open("./btxrd/splits/group_non_kaggle/test.txt", "r")], 
                       cluster_file, 
                       begin_features, 
                       end_features, 
