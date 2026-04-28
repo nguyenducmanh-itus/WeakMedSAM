@@ -88,9 +88,9 @@ def dictionary_list_split(cluster_path) :
     #train_split.extend(non_train_split)
     #val_split.extend(non_val_split)
     #test_split.extend(non_test_split)
-    return {"./splits/group_non_kaggle/train.txt" : train, 
-            "./splits/group_non_kaggle/val.txt" : val, 
-            "./splits/group_non_kaggle/test.txt" : test}
+    return {"./btxrd/splits/group_non_kaggle/train.txt" : train, 
+            "./btxrd/splits/group_non_kaggle/val.txt" : val, 
+            "./btxrd/splits/group_non_kaggle/test.txt" : test}
 
     
 def save_path(cluster_path, data_path) :
@@ -99,6 +99,7 @@ def save_path(cluster_path, data_path) :
         os.makedirs(os.path.dirname(name), exist_ok = True)
         with open(name, "w") as f :
             for i in list_imgs :
+                i = i + ".jpeg"
                 path = os.path.join(data_path, i)
                 path = path.replace("\\", "/")
                 f.writelines(path + "\n")
