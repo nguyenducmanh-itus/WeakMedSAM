@@ -106,6 +106,6 @@ def save_path(cluster_path, data_path) :
 
                     
 #-----Split dataset for U-net stage-------#
-data_path = "kaggle/input/datasets/nguyenmanh0404/btxrd-datasets/images"
+data_path = "/kaggle/input/datasets/nguyenmanh0404/btxrd-datasets/images"
 save_path(cluster_path, data_path)
 
