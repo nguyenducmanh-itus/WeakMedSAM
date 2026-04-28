@@ -25,8 +25,8 @@ class BTRXD_Dataset(Dataset) :
         begin_feature: str,
         end_feature: str,
         child_classes: int,
-        images_path="./data/BTXRD/images",
         df_path="./data/BTXRD/dataset.xlsx",
+        images_path="./data/BTXRD/images"
     ):
         self.images = image_list
         self.images_path = images_path
@@ -92,27 +92,31 @@ class BTRXD_Dataset(Dataset) :
             }                        
         
 def get_dataset(cluster_file : str, begin_feature : str, 
-                end_feature : str,child_classes : int) -> tuple[Dataset, Dataset, Dataset] :
+                end_feature : str,child_classes : int, 
+                df_path : str) -> tuple[Dataset, Dataset, Dataset] :
     train_dataset =  BTRXD_Dataset([sample_t.strip() 
                       for sample_t in open("./btxrd/splits/group_non_kaggle/train.txt", "r")], 
                       cluster_file, 
                       begin_feature, 
                       end_feature, 
-                      child_classes
+                      child_classes, 
+                      df_path
     )
     val_dataset =  BTRXD_Dataset([sample_v.strip() 
                       for sample_v in open("./btxrd/splits/group_non_kaggle/val.txt", "r")], 
                       cluster_file, 
                       begin_feature, 
                       end_feature, 
-                      child_classes
+                      child_classes, 
+                      df_path
     )
     test_dataset =  BTRXD_Dataset([sample_tt.strip() 
                       for sample_tt in open("./btxrd/splits/group_non_kaggle/test.txt", "r")], 
                       cluster_file, 
                       begin_feature, 
                       end_feature, 
-                      child_classes
+                      child_classes, 
+                      df_path
     )
     return train_dataset, val_dataset, test_dataset 
         
