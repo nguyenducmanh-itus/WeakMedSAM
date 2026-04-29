@@ -123,7 +123,7 @@ def get_dataset(cluster_file : str, begin_feature : str,
 
 def get_all_dataset(data_path, cluster_file, 
                      begin_features, end_features, 
-                     child_classes) :
+                     child_classes, df_path) :
     with open("./btxrd/splits/all.txt") as f :
         file_list = [line.strip() for line in f]
         
@@ -131,7 +131,8 @@ def get_all_dataset(data_path, cluster_file,
                             cluster_file = cluster_file, 
                             begin_feature = begin_features, 
                             end_feature = end_features,
-                            child_classes = child_classes)
+                            child_classes = child_classes, 
+                            df_path = df_path)
     return dataset
 
     

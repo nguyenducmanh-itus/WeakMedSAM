@@ -76,6 +76,7 @@ def worker(rank, subsets, gpus, args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-path", type=str)
+    parser.add_argument("--dataframe-path", type=str)
     parser.add_argument("--save-path", type=str)
     parser.add_argument("--data-module", type=str)
     parser.add_argument("--vit-name", type=str)
@@ -94,7 +95,12 @@ if __name__ == "__main__":
     os.makedirs(args.save_path, exist_ok=True)
 
     data_module = importlib.import_module(f"{args.data_module}.dataset")
-    dataset = data_module.get_all_dataset(args.data_path, "osteochondroma", "other mt", "", 0)
+    dataset = data_module.get_all_dataset(args.data_path, 
+                                          "osteochondroma", 
+                                          "other mt", 
+                                          "", 
+                                          0, 
+                                          args.dataframe_path)
     gpus = args.gpus.split(",")
     subset_size = len(dataset) // len(gpus) + 1
     subsets = []
