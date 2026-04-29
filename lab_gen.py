@@ -95,10 +95,10 @@ if __name__ == "__main__":
     os.makedirs(args.save_path, exist_ok=True)
 
     data_module = importlib.import_module(f"{args.data_module}.dataset")
-    dataset = data_module.get_all_dataset(args.data_path, 
+    dataset = data_module.get_all_dataset(args.data_path,
+                                          "",  
                                           "osteochondroma", 
                                           "other mt", 
-                                          "", 
                                           0, 
                                           args.dataframe_path)
     gpus = args.gpus.split(",")
