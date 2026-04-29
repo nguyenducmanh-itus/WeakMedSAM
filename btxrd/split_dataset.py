@@ -15,9 +15,9 @@ cluster_path = r"C:/Users/ADMIN/OneDrive - VNU-HCMUS/CNTT-HK8/Thesis/WeakMedSAM/
 def get_list_all_images(data_path = "./data/BTXRD/dataset.xlsx") :     
     df = pd.read_excel(data_path)
     images_path = df["image_id"]
-    with open("./btxrd/splits/all.txt", "w") as text_file : 
+    with open("./btxrd/splits/all_kaggle.txt", "w") as text_file : 
         for i in images_path : 
-            text_file.writelines(f"./data/BTXRD/images/{i}" +"/n")        
+            text_file.writelines(f"/kaggle/input/datasets/nguyenmanh0404/btxrd-datasets/images/{i}" +"\n")        
             
 
 #Get list images is tumor-free
@@ -106,6 +106,5 @@ def save_path(cluster_path, data_path) :
 
                     
 #-----Split dataset for U-net stage-------#
-data_path = "/kaggle/input/datasets/nguyenmanh0404/btxrd-datasets/images"
-save_path(cluster_path, data_path)
+get_list_all_images()
 
