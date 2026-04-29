@@ -124,7 +124,7 @@ def get_dataset(cluster_file : str, begin_feature : str,
 def get_all_dataset(data_path, cluster_file, 
                      begin_features, end_features, 
                      child_classes, df_path) :
-    with open("/kaggle/working/WeakMedSAM/btxrd/splits/all-kaggle.txt") as f : #Train in kaggle
+    with open("/kaggle/working/WeakMedSAM/btxrd/splits/all_kaggle.txt") as f : #Train in kaggle
     #with open("./btxrd/splits/all.txt") as f :#Not train in kaggle
         file_list = [line.strip() for line in f]
         
