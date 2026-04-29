@@ -12,6 +12,7 @@ from utils.affinity import get_tran
 import numpy as np
 from PIL import Image
 import torch.multiprocessing as mp
+from collections import OrderedDict
 
 
 def worker(rank, subsets, gpus, args):
@@ -33,7 +34,12 @@ def worker(rank, subsets, gpus, args):
     )
     if args.samus_ckpt:
         checkpoint = torch.load(args.samus_ckpt)
-        model.load_state_dict(checkpoint)
+        state_dict = checkpoint
+        new_state_dict = OrderedDict()
+        for k, v in state_dict.items() :
+            name = k[7:] if k.startswith('module.') else k
+            new_state_dict[name] = v
+        model.load_state_dict(new_state_dict)
     model = model.cuda()
     model.eval()
 
