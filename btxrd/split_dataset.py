@@ -17,6 +17,8 @@ def get_list_all_images(data_path = "./data/BTXRD/dataset.xlsx") :
     images_path = df["image_id"]
     with open("./btxrd/splits/all_kaggle.txt", "w") as text_file : 
         for i in images_path : 
+            if i[9:] == ".jpg" :
+                i = i[:9] + ".jpeg" 
             text_file.writelines(f"/kaggle/input/datasets/nguyenmanh0404/btxrd-datasets/images/{i}" +"\n")        
             
 
