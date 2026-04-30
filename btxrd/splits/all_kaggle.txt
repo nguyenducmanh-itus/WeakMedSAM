@@ -1273,7 +1273,6 @@
 /kaggle/input/datasets/nguyenmanh0404/btxrd-datasets/images/IMG001273.jpeg
 /kaggle/input/datasets/nguyenmanh0404/btxrd-datasets/images/IMG001274.jpeg
 /kaggle/input/datasets/nguyenmanh0404/btxrd-datasets/images/IMG001275.jpeg
-/kaggle/input/datasets/nguyenmanh0404/btxrd-datasets/images/IMG001276.jpeg
 /kaggle/input/datasets/nguyenmanh0404/btxrd-datasets/images/IMG001277.jpeg
 /kaggle/input/datasets/nguyenmanh0404/btxrd-datasets/images/IMG001278.jpeg
 /kaggle/input/datasets/nguyenmanh0404/btxrd-datasets/images/IMG001279.jpeg
