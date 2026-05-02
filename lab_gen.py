@@ -73,10 +73,12 @@ def worker(rank, subsets, gpus, args):
             rw_cam *= pred.view(pred.size(0), pred.size(1), 1, 1).expand_as(rw_cam)
 
             for i, c in enumerate(rw_cam):
-                c = c.cpu().numpy()[0]
-                Image.fromarray(
-                    (c > args.threshold).astype(np.uint8) * 255, mode="L"
-                ).save(os.path.join(args.save_path, f"{idxs[i]}.png"))
+                c_np = c.cpu().numpy()  # Shape: (parent_classes, H, W)
+                for class_idx in range(1, c_np.shape[0]):  # Skip class 0 (non-tumor), only process tumor classes (1-9)
+                    mask = c_np[class_idx]
+                    Image.fromarray(
+                        (mask > args.threshold).astype(np.uint8) * 255, mode="L"
+                    ).save(os.path.join(args.save_path, f"{idxs[i]}_{class_idx}.png"))
 
 
 if __name__ == "__main__":
