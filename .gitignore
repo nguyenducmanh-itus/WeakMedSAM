@@ -1,0 +1,5 @@
+/data
+/Body_part_classes
+__pycache__/
+*.pync
+

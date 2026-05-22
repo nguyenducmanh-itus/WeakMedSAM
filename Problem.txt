@@ -1,0 +1,15 @@
+Các vấn đề đang gặp phải : 
+- Có ~ 200 dataset có nhiều vùng xương kết hợp khiến cho việc áp dụng thuật toán k-mean clustering không hiệu quả.
+- Xử lý các dataset có vùng xương kết hợp ?.
+- Trong dataframe không có nhãn vùng xương cho các dữ liệu không có khối u -> không thể chia dataset để thêm 1 nhánh phân loại dựa trên dataframe được.
+
+
+Chiến lược : 
+- Sử dụng thuật toán gom cụm để chia các nhóm xương -> Mục đích : Gom các đặc trưng xương giống nhau vào cùng 1 nhóm để giải quyết vấn đề mất cân bằng dữ liệu ở các khhu vực xương khác nhau , tạo một nhánh phân loại phụ phân loại nhóm xương tránh việc mô hình phân loại dựa trên thiên lệch về diện tích để học. -> Cụm này được gọi là Siêu lớp 
+- Sử dụng thuật toán toán k-means-clustering một lần nữa với nhóm siêu lớp để bóc tách các vùng đồng xuất hiện trong vùng tổn thương.
+- Sau khi gom nhóm dựa trên cấu trúc hình thái của xương với số cụm là 4 kết quả thu được :
+    * Lớp 0 : 2279 datasets
+    * Lớp 1 : 710 datasets
+    * Lớp  2 : 250 datasets
+    * Lớp 3 : 507 datasets
+- Hiện tượng mất cân bằng dữ liệu vẫn xảy ra ở lớp 2

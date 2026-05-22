@@ -1,0 +1,15 @@
+'hand': 97
+'ulna': 62
+'radius': 73
+'humerus': 235
+'foot': 93
+'tibia': 630
+'fibula': 259
+'femur': 592
+'hip bone': 69
+'ankle-joint': 4
+'knee-joint': 37
+'hip-joint': 3
+'wrist-joint': 0
+'elbow-joint': 5
+'shoulder-joint': 12
