@@ -65,7 +65,8 @@ class Samus(nn.Module):
         pixel_mean: List[float] = [123.675, 116.28, 103.53],
         pixel_std: List[float] = [58.395, 57.12, 57.375],
         parent_classes=2,
-        child_classes=4,
+        child_bone_classes = 4,
+        child_occurance_classes = 3,
     ) -> None:
         """
         SAM predicts object masks from an image and input prompts.
@@ -81,13 +82,19 @@ class Samus(nn.Module):
         """
         super().__init__()
         self.parent_classes = parent_classes
-        self.child_classes = child_classes
+        self.child_bones = child_bone_classes
+        self.child_occurance = child_occurance_classes
         self.image_encoder = image_encoder
         self.prompt_encoder = prompt_encoder
         self.mask_decoder = mask_decoder
         self.parent_fc = nn.Conv2d(EMBED_SIZE, self.parent_classes, 1, bias=False)
-        self.child_fc = nn.Conv2d(
-            EMBED_SIZE, self.parent_classes * self.child_classes + 1, 1, bias=False
+        self.child_bones_fc = nn.Conv2d(
+            EMBED_SIZE, self.parent_classes * self.child_bones, 1, bias=False
+        )
+        #Add classifier bone parts 
+        self.child_occurance_fc = nn.Conv2d(
+            EMBED_SIZE, self.parent_classes * self.child_bones * self.child_occurance + 1 ,
+            1, bias=False
         )
         self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
         self.register_buffer(
@@ -223,8 +230,9 @@ class Samus(nn.Module):
         output = self.avg_pool(cls_embedding)
         output = output.view(output.size(0), -1, 1, 1)
         parent_output = self.parent_fc(output).view(imgs.size(0), -1)
-        child_output = self.child_fc(output).view(imgs.size(0), -1)
-        return parent_output, child_output, cam_output
+        child_bones_output = self.child_bones_fc(output).view(imgs.size(0), -1)
+        child_occurance_output = self.child_occurance_fc(output).view(imgs.size(0), -1)
+        return parent_output, child_bones_output, child_occurance_output , cam_output
 
     @torch.no_grad()
     def forward_raw_mask(self, imgs: torch.Tensor, pt: torch.Tensor, lb: torch.Tensor):

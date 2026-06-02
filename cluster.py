@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 from sklearn.cluster import KMeans
 import numpy as np
 from torchvision.models import resnet18, resnet50
@@ -10,6 +11,21 @@ import importlib
 import pickle
 
 
+def length_each_cluster(cluster_labels, child_classes, len_all_cluster) :
+    cluster_len = {}
+    for i in range(child_classes) :
+        cluster_len[i] = 0
+    for j in range(len_all_cluster) :
+        cluster_len[int(cluster_labels[j])] += 1
+            
+    return cluster_len
+
+def cluster_cause_imbalance(cluster_len) :
+    cluster_index = []
+    for keys, values in cluster_len.items() :
+        if values < 20 :
+            cluster_index.append(int(keys))
+    return cluster_index
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_path", type=str)
@@ -26,17 +42,20 @@ if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpus
 
     os.makedirs(args.save_path, exist_ok=True)
-    #ResNet pre-trained in ImageNet
+    #ResNet pre-trained in medical images 
     resnet = resnet50(weights="DEFAULT").cuda()
-    #ResNet pre-trained in medical images
-    # resnet = resnet50(pretrained = True)
-    # path = "C:/Users/ADMIN/OneDrive - VNU-HCMUS/CNTT-HK8/ResNet50.pt"
-    # resnet.load_state_dict(torch.load(path, map_location=torch.device('cuda')))
+    # pre_resnet_path = 'Resnet50_medical.pt'
+    # state_dict = torch.load(pre_resnet_path)
+    # resnet.load_state_dict(state_dict, strict=False)
+    resnet.avgpool = nn.AdaptiveMaxPool2d((1, 1))
     resnet.fc = torch.nn.Identity()
     resnet.eval()
-
     data_module = importlib.import_module(f"{args.data_module}.dataset")
-    dataset = data_module.get_all_dataset(args.df_path, args.data_path, 0, "")
+    dataset = data_module.get_all_dataset(args.df_path, args.data_path, 
+                                          4, 
+                                          0,
+                                          "Body_part_classes/btxrd-4.bin", 
+                                          "")
     data_loader = DataLoader(
         dataset,
         args.batch_size,
@@ -44,7 +63,6 @@ if __name__ == "__main__":
         pin_memory=True,
         num_workers=4,
     )
-
     class_features = [None] * args.parent_classes
     idx_list = []
     for _ in range(args.parent_classes):
@@ -55,7 +73,7 @@ if __name__ == "__main__":
     with torch.no_grad():
         for i, pack in tqdm(enumerate(data_loader), ncols=80, total=len(data_loader)):
             imgs = pack["img"]
-            lab = pack["plab"]
+            p_lab = pack["plab"]
             idxs = pack["idx"]
             all_idx_list += idxs
 
@@ -70,26 +88,42 @@ if __name__ == "__main__":
                     idx_list[0].append(idxs[b])
                 #This code for cluster co-occurance latent in dataset
                 else : 
+                    lab = pack["part_clab"]
                     for c in range(args.parent_classes):
-                        if lab[b, c] != 0:
+                        if lab[b, c] != 0  and p_lab[b, 0] == 1:
                             if class_features[c] is None:
                                 class_features[c] = []
                             class_features[c].append(f)
                             idx_list[c].append(idxs[b])
 
     save_map = {idx: np.zeros(args.parent_classes) for idx in all_idx_list}
-    
     for c in range(args.parent_classes):
-        kmeans = KMeans(n_clusters=args.child_classes)
+        kmeans = KMeans(n_clusters=args.child_classes, random_state=42)
         kmeans.fit(class_features[c])
         lbs = list(kmeans.labels_)
-
+        l_e_cluster = length_each_cluster(lbs, 3, len(lbs))
+        idx_make_imbalance = cluster_cause_imbalance(l_e_cluster)
+        orginal_index = np.arange(len(kmeans.cluster_centers_))
+        filtered_idx = np.delete(orginal_index, idx_make_imbalance)
+        centers = np.delete(kmeans.cluster_centers_, idx_make_imbalance, axis = 0)
         for i, idx in enumerate(idx_list[c]):
-            save_map[idx][c] = lbs[i]
+            if int(lbs[i]) in idx_make_imbalance :
+                sample = class_features[c][i].reshape(
+                    (-1, 
+                     len(class_features[c][i])
+                    )
+                )
+                dist = np.linalg.norm(centers - sample, axis = 1)
+                new_idx = np.argmin(dist)
+                save_map[idx][c] = filtered_idx[new_idx] + 1
+            else : 
+                save_map[idx][c] = lbs[i] + 1
 
+
+    
     with open(
         os.path.join(
-            args.save_path, f"{str(args.data_module)}-{args.child_classes}.bin"
+            args.save_path, f"{str(args.data_module)}-fix-{args.child_classes}.bin"
         ),
         "wb",
     ) as f:

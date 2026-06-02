@@ -1,5 +1,17 @@
-/data
-/Body_part_classes
+#Python
 __pycache__/
-*.pync
+*.pyc
+*.pyo
+*.pyd
+
+#Checkpoints
+*.pth
+*.bin
+*.pt
+*ckpt
+#Dataset
+data/
+
+#Vscode
+.vscode
 

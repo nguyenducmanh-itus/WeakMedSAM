@@ -44,7 +44,8 @@ def build_samus_vit_l(parent_classes, child_classes, checkpoint=None):
     )
 
 
-def build_samus_vit_b(parent_classes, child_classes, checkpoint=None):
+def build_samus_vit_b(parent_classes,child_bone_classes, 
+                      child_occurance_classes, checkpoint=None):
     return _build_samus(
         encoder_input_size=256,
         encoder_embed_dim=768,
@@ -53,7 +54,8 @@ def build_samus_vit_b(parent_classes, child_classes, checkpoint=None):
         encoder_global_attn_indexes=[2, 5, 8, 11],
         checkpoint=checkpoint,
         parent_classes=parent_classes,
-        child_classes=child_classes,
+        child_bone_classes=child_bone_classes,
+        child_occurance_classes=child_occurance_classes
     )
 
 
@@ -73,7 +75,8 @@ def _build_samus(
     encoder_global_attn_indexes,
     checkpoint=None,
     parent_classes=2,
-    child_classes=4,
+    child_bone_classes=4,
+    child_occurance_classes = 3
 ):
     prompt_embed_dim = 256
     image_size = encoder_input_size
@@ -113,7 +116,8 @@ def _build_samus(
             iou_head_hidden_dim=256,
         ),
         parent_classes=parent_classes,
-        child_classes=child_classes,
+        child_bone_classes=child_bone_classes,
+        child_occurance_classes = child_occurance_classes
     )
     samus.eval()
     if checkpoint is not None:

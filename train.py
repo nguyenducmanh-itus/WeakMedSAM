@@ -14,6 +14,7 @@ from utils.metrics import dice
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_path", type=str)
+    parser.add_argument("--df_path", type=str)
     parser.add_argument("--data_module", type=str)
     parser.add_argument("--vit_name", type=str)
     parser.add_argument("--sam_ckpt", type=str)
@@ -24,9 +25,11 @@ def main():
     parser.add_argument("--max_epochs", type=int)
     parser.add_argument("--val_iters", type=int)
     parser.add_argument("--parent_classes", type=int)
-    parser.add_argument("--child_classes", type=int)
+    parser.add_argument("--child_bone_classes", type=int)
+    parser.add_argument("--child_occurance_classes", type = int)
     parser.add_argument("--child_weight", type=float)
-    parser.add_argument("--cluster_file", type=str)
+    parser.add_argument("--bone_cluster_file", type=str)
+    parser.add_argument("--occurance_cluster_file", type=str)
     parser.add_argument("--logdir", type=str)
     parser.add_argument("--seed", type=int)
     parser.add_argument("--gpus", type=str)
@@ -41,7 +44,8 @@ def main():
 
     model = samus_model_registry["vit_b"](
         parent_classes=args.parent_classes,
-        child_classes=args.child_classes,
+        child_bone_classes=args.child_bone_classes,
+        child_occurance_classes = args.child_occurance_classes,
         checkpoint=args.sam_ckpt,
     )
     model = torch.nn.DataParallel(model).cuda()
@@ -51,7 +55,9 @@ def main():
 
     data_module = importlib.import_module(f"{args.data_module}.dataset")
     train_dataset, val_dataset, _ = data_module.get_dataset(
-        args.data_path, args.child_classes, args.cluster_file
+        args.df_path, args.data_path, 
+        args.child_bone_classes, args.child_occurance_classes, 
+        args.bone_cluster_file, args.occurance_cluster_file
     )
 
     train_loader = DataLoader(
@@ -98,17 +104,25 @@ def main():
 
         imgs = datapack["img"].cuda()
         parent_labs = datapack["plab"].cuda()
-        child_labs = datapack["clab"].cuda()
-
-        parent_x, child_x, _ = model(imgs)
+        child_bone_labs = datapack["bone_clab"].cuda()
+        child_oc_labs = datapack["oc_clab"].cuda()
+        parent_x, child_bone_x, child_oc_x, _ = model(imgs)
 
         parent_loss = F.binary_cross_entropy_with_logits(
             parent_x,
             parent_labs,
         )
 
-        child_loss = F.binary_cross_entropy_with_logits(child_x, child_labs)
-        loss = parent_loss + args.child_weight * child_loss
+        child_bone_loss = F.binary_cross_entropy_with_logits(
+            child_bone_x, 
+            child_bone_labs)
+        child_occurance_loss = F.binary_cross_entropy_with_logits(
+            child_oc_x,
+            child_oc_labs 
+        )
+        bone_loss = child_bone_loss * args.child_weight
+        oc_loss = child_occurance_loss * args.child_weight
+        loss = parent_loss + bone_loss + oc_loss
 
         loss.backward()
         optimizer.step()
@@ -117,14 +131,20 @@ def main():
         parent_pred = (torch.sigmoid(parent_x) > 0.5).float()
         parent_score = torch.eq(parent_pred, parent_labs).sum() / parent_labs.numel()
 
-        child_pred = (torch.sigmoid(child_x) > 0.5).float()
-        child_score = torch.eq(child_pred, child_labs).sum() / child_labs.numel()
-
+        child_bone_pred = (torch.sigmoid(child_bone_x) > 0.5).float()
+        child_bone_score = torch.eq(child_bone_pred, child_bone_labs).sum() \
+            / child_bone_labs.numel()
+        child_oc_pred = (torch.sigmoid(child_oc_x) > 0.5).float()
+        child_oc_score = torch.eq(child_oc_pred, child_oc_labs).sum() \
+            /child_oc_labs.numel()
+        
         writer.add_scalar("train/train loss", loss.item(), n_iter)
         writer.add_scalar("train/parent loss", parent_loss.item(), n_iter)
-        writer.add_scalar("train/child loss", child_loss.item(), n_iter)
+        writer.add_scalar("train/child loss", child_bone_loss.item(), n_iter)
+        writer.add_scalar("train/child oc loss", child_occurance_loss.item(), n_iter)
         writer.add_scalar("train/parent score", parent_score.item(), n_iter)
-        writer.add_scalar("train/child score", child_score.item(), n_iter)
+        writer.add_scalar("train/child bone score", child_bone_score.item(), n_iter)
+        writer.add_scalar("train/child occurance score", child_oc_score.item(), n_iter)
         writer.add_scalar("train/lr", optimizer.param_groups[0]["lr"], n_iter)
 
         if n_iter % args.val_iters == 0:

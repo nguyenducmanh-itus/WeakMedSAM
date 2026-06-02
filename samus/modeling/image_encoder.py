@@ -63,7 +63,8 @@ class ImageEncoderViT(nn.Module):
         self.img_size = img_size
 
         self.aux_layer = 10
-
+        #Encoding images to embedding with em_dim dimession  
+        #Each vector represent for patch_size x patch_size field of view.
         self.cnn_embed = SingleCNNEmbed(
             patchsize=patch_size, in_chans=3, embed_dim=embed_dim
         )  # new to sam
@@ -73,7 +74,7 @@ class ImageEncoderViT(nn.Module):
             in_chans=3,
             embed_dim=embed_dim,
         )
-
+        
         self.pos_embed: Optional[nn.Parameter] = None
         if use_abs_pos:
             # Initialize absolute positional embedding with pretrain image size.
@@ -577,6 +578,7 @@ class SingleDown(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3):
         super().__init__()
         self.maxpool_conv = nn.Sequential(
+            #In MaxPool2d, default argument stride = kernel_size
             nn.MaxPool2d(2),
             nn.Conv2d(
                 in_channels,
@@ -673,10 +675,20 @@ class SingleCNNEmbed(nn.Module):
         super().__init__()
         downtimes = int(math.log2(patchsize))
         mid_channel = 64
+        #Single Conv -> a sequential module with : 
+        #1. A CNN with kernels size = 3 and padding = 1 => resolution is consistence
+        #2. A Normalization layers to normalize output of CNN.
+        #3. A activate function to learn features non-linear. 
         self.inc = SingleConv(in_chans, mid_channel)
         self.downs = nn.ModuleList()
+        #Expend the fied of view with each pixel output represent fied of view 8x8 pixel
         for i in range(downtimes):
             if i == downtimes - 1:
+                #Class SingleDown used for decrease feature map resolution with 4 components :
+                #1. MaxPool2D used to decrease resolution.
+                #2. CNN with kernel size = 3 and padding = 1 to learn spatial features after resolution
+                #3. A Normalization layer.
+                #4. A activation function.
                 down = SingleDown(mid_channel, embed_dim)
             else:
                 down = SingleDown(mid_channel, mid_channel * 2)
@@ -753,6 +765,8 @@ class PatchEmbed0(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        #Resize images to (256 + 8) * (256 + 8)
+        #With 8 x 8 pixel added is cls token embedding.
         x = F.interpolate(x, (256 + 8, 256 + 8), mode="bilinear", align_corners=False)
         x = self.proj(x)
         # B C H W -> B H W C
