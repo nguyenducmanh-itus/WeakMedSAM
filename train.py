@@ -102,6 +102,7 @@ def main():
             train_loader_iter = iter(train_loader)
             datapack = next(train_loader_iter)
 
+        print(datapack.shape)
         imgs = datapack["img"].cuda()
         parent_labs = datapack["plab"].cuda()
         child_bone_labs = datapack["bone_clab"].cuda()
