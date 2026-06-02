@@ -156,7 +156,7 @@ def main():
                 for pack in val_loader:
                     imgs = pack["img"].cuda()
                     labs = pack["plab"].float().cuda()
-                    x, _, _ = model(imgs)
+                    x, _, _, _ = model(imgs)
                     val_loss.add(F.binary_cross_entropy_with_logits(x, labs).item())
                     pred = (torch.sigmoid(x) > 0.5).float()
 

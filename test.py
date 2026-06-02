@@ -15,9 +15,10 @@ cov = [[0.5, 0.8, 2.0],
     ]
 
 n_samples = 100
-X = np.random.multivariate_normal(means, cov, size = n_samples)
+#X = np.random.multivariate_normal(means, cov, size = n_samples)
 
-x = torch.randn((1, 3, 256 + 8, 256 + 8))
-prj = nn.Conv2d(3, 768, kernel_size=16, stride=8, padding=0)
-x = prj(x)
-print(x.shape)
+num_samples = 10
+num_classes = 5
+input = torch.randn((num_samples, num_classes))
+target = torch.randint(0, 2, (num_samples, num_classes)).float()
+print(target)
