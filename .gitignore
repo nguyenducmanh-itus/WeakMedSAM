@@ -9,6 +9,7 @@ __pycache__/
 *.bin
 *.pt
 *ckpt
+ckpt_/
 #Dataset
 data/
 
