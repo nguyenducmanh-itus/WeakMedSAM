@@ -27,7 +27,8 @@ def main():
     parser.add_argument("--parent_classes", type=int)
     parser.add_argument("--child_bone_classes", type=int)
     parser.add_argument("--child_occurance_classes", type = int)
-    parser.add_argument("--child_weight", type=float)
+    parser.add_argument("--bone_child_weight", type=float)
+    parser.add_argument("--oc_child_weight", type=float)
     parser.add_argument("--bone_cluster_file", type=str)
     parser.add_argument("--occurance_cluster_file", type=str)
     parser.add_argument("--logdir", type=str)
@@ -102,8 +103,7 @@ def main():
             train_loader_iter = iter(train_loader)
             datapack = next(train_loader_iter)
 
-        imgs = datapack["img"].cuda()
-        print(imgs.shape)        
+        imgs = datapack["img"].cuda()       
         parent_labs = datapack["plab"].cuda()
         child_bone_labs = datapack["bone_clab"].cuda()
         child_oc_labs = datapack["oc_clab"].cuda()
@@ -113,10 +113,11 @@ def main():
             parent_x,
             parent_labs,
         )
-
+        
         child_bone_loss = F.binary_cross_entropy_with_logits(
             child_bone_x, 
             child_bone_labs)
+        
         child_occurance_loss = F.binary_cross_entropy_with_logits(
             child_oc_x,
             child_oc_labs 
@@ -135,6 +136,7 @@ def main():
         child_bone_pred = (torch.sigmoid(child_bone_x) > 0.5).float()
         child_bone_score = torch.eq(child_bone_pred, child_bone_labs).sum() \
             / child_bone_labs.numel()
+
         child_oc_pred = (torch.sigmoid(child_oc_x) > 0.5).float()
         child_oc_score = torch.eq(child_oc_pred, child_oc_labs).sum() \
             /child_oc_labs.numel()
