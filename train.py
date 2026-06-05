@@ -122,8 +122,8 @@ def main():
             child_oc_x,
             child_oc_labs 
         )
-        bone_loss = child_bone_loss * args.child_weight
-        oc_loss = child_occurance_loss * args.child_weight
+        bone_loss = child_bone_loss * args.bone_child_weight
+        oc_loss = child_occurance_loss * args.oc_child_weight
         loss = parent_loss + bone_loss + oc_loss
 
         loss.backward()
