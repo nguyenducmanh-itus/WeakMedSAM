@@ -141,7 +141,7 @@ def main():
         
         writer.add_scalar("train/train loss", loss.item(), n_iter)
         writer.add_scalar("train/parent loss", parent_loss.item(), n_iter)
-        writer.add_scalar("train/child loss", child_bone_loss.item(), n_iter)
+        writer.add_scalar("train/child bone loss", child_bone_loss.item(), n_iter)
         writer.add_scalar("train/child oc loss", child_occurance_loss.item(), n_iter)
         writer.add_scalar("train/parent score", parent_score.item(), n_iter)
         writer.add_scalar("train/child bone score", child_bone_score.item(), n_iter)

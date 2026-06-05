@@ -12,7 +12,10 @@ __pycache__/
 ckpt_/
 #Dataset
 data/
-
+train_loss.txt
 #Vscode
 .vscode
+
+#Log
+logdir/
 

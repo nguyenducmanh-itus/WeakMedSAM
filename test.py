@@ -6,19 +6,29 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F 
-np.random.default_rng(seed = 42)
+from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
+import pandas as pd
+import os
 
-means = [1.0, 3.0, 4.0]
-cov = [[0.5, 0.8, 2.0], 
-       [0.8, 1.0, 1.5],
-       [2.0, 1.5, 3.0]
-    ]
+log_path = "logdir/classifier_train"
+event_acc = EventAccumulator(log_path)
+event_acc.Reload()
 
-n_samples = 100
-#X = np.random.multivariate_normal(means, cov, size = n_samples)
 
-num_samples = 10
-num_classes = 5
-input = torch.randn((num_samples, num_classes))
-target = torch.randint(0, 2, (num_samples, num_classes)).float()
-print(target)
+
+tag_names = ['train/parent loss', 'train/train loss', 'train/child loss', 'train/child oc loss']
+
+with open("train_loss.txt", "w") as f :
+   for tag_name in tag_names :
+      if tag_name in event_acc.Tags()['scalars'] :         
+            events = event_acc.Scalars(tag_name)
+            df = pd.DataFrame([(e.step, e.value) for e in events], columns=['Step', 'Value'])
+            f.write(tag_name)
+            f.write("\n")
+            for i in range(len(df)) :
+               f.write(str(df.loc[i, "Step"]))
+               f.write(" ")
+               f.write(str(df.loc[i, "Value"]))
+               f.write("\n")
+               
+
