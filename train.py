@@ -122,11 +122,12 @@ def main():
             child_oc_x,
             child_oc_labs 
         )
-        bone_loss = child_bone_loss * args.bone_child_weight
-        oc_loss = child_occurance_loss * args.oc_child_weight
-        loss = parent_loss + bone_loss + oc_loss
+        child_bone_loss = child_bone_loss *  args.bone_child_weight
+        child_occurance_loss = child_occurance_loss * args.oc_child_weight
+        loss = parent_loss + child_bone_loss + child_occurance_loss
 
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
         optimizer.step()
         scheduler.step()
 
@@ -144,7 +145,7 @@ def main():
         writer.add_scalar("train/train loss", loss.item(), n_iter)
         writer.add_scalar("train/parent loss", parent_loss.item(), n_iter)
         writer.add_scalar("train/child bone loss", child_bone_loss.item(), n_iter)
-        writer.add_scalar("train/child oc loss", child_occurance_loss.item(), n_iter)
+        writer.add_scalar("train/child occurance loss", child_occurance_loss.item(), n_iter)
         writer.add_scalar("train/parent score", parent_score.item(), n_iter)
         writer.add_scalar("train/child bone score", child_bone_score.item(), n_iter)
         writer.add_scalar("train/child occurance score", child_oc_score.item(), n_iter)
