@@ -123,6 +123,7 @@ def main():
             child_bone_labs)
         # Set child_bone_loss to 0 for samples without tumor (parent_labs == 0)
         bone_mask = parent_labs.squeeze()
+        print(parent_labs)
         child_bone_loss = child_bone_loss * bone_mask
         
         child_occurance_loss = F.binary_cross_entropy_with_logits(
