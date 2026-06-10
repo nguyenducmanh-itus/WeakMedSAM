@@ -34,19 +34,22 @@ from PIL import Image, ImageDraw
 #                f.write("\n")
 
 
-json_path = "data/BTXRD/Annotations/IMG000001.json"
-image_path = "data/BTXRD/images/IMG000001.jpeg"
-with open(json_path, mode="r", encoding="utf-8") as read_file :
-    tumor_inf = json.load(read_file)
+# json_path = "data/BTXRD/Annotations/IMG000001.json"
+# image_path = "data/BTXRD/images/IMG000001.jpeg"
+# with open(json_path, mode="r", encoding="utf-8") as read_file :
+#     tumor_inf = json.load(read_file)
 
-shape_list = []
+# shape_list = []
 
-for i in range(len(tumor_inf["shapes"])) :
-    shape_list.append(tumor_inf["shapes"][i]["points"])
+# for i in range(len(tumor_inf["shapes"])) :
+#     shape_list.append(tumor_inf["shapes"][i]["points"])
 
-image = Image.open(image_path)
-draw = ImageDraw.Draw(image)
-draw.rectangle(shape_list[0], outline="red", fill=None, width=1)
-#image.show()
-print(shape_list[0][0])
+# image = Image.open(image_path)
+# draw = ImageDraw.Draw(image)
+# draw.rectangle(shape_list[0], outline="red", fill=None, width=1)
+# #image.show()
+# print(shape_list[0][0])
 #Draw bbx tumor in image
+plabs = torch.tensor([[1.], [1.], [1.], [1.], [0.]])
+plabs = plabs.squeeze()
+print(plabs)
