@@ -132,8 +132,9 @@ def main():
         child_bone_loss = child_bone_loss *  args.bone_child_weight
         child_occurance_loss = child_occurance_loss * args.oc_child_weight
         loss = parent_loss + child_bone_loss + child_occurance_loss
-        loss /= 4
+        loss = loss / 4
         batch_steps += 1
+        print(loss.shape)
         loss.backward()
         if batch_steps % accumulation_steps == 0 : 
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
