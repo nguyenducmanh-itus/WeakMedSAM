@@ -92,10 +92,14 @@ def main():
     writer = SummaryWriter(os.path.join(args.logdir, args.index))
 
     pbar = tqdm(range(1, args.max_iters + 1), ncols=100)
+    accumulation_steps = 4
     train_loader_iter = iter(train_loader)
+    batch_steps = 0
     for n_iter in pbar:
+        
         model.train()
-        optimizer.zero_grad()
+        if batch_steps % accumulation_steps == 0 :
+            optimizer.zero_grad()
         try:
             datapack = next(train_loader_iter)
 
@@ -117,6 +121,9 @@ def main():
         child_bone_loss = F.binary_cross_entropy_with_logits(
             child_bone_x, 
             child_bone_labs)
+        # Set child_bone_loss to 0 for samples without tumor (parent_labs == 0)
+        bone_mask = parent_labs.squeeze()
+        child_bone_loss = child_bone_loss * bone_mask
         
         child_occurance_loss = F.binary_cross_entropy_with_logits(
             child_oc_x,
@@ -125,18 +132,26 @@ def main():
         child_bone_loss = child_bone_loss *  args.bone_child_weight
         child_occurance_loss = child_occurance_loss * args.oc_child_weight
         loss = parent_loss + child_bone_loss + child_occurance_loss
-
+        loss /= 4
+        batch_steps += 1
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-        optimizer.step()
-        scheduler.step()
+        if batch_steps % accumulation_steps == 0 : 
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            optimizer.step()
+            scheduler.step()
 
         parent_pred = (torch.sigmoid(parent_x) > 0.5).float()
         parent_score = torch.eq(parent_pred, parent_labs).sum() / parent_labs.numel()
 
         child_bone_pred = (torch.sigmoid(child_bone_x) > 0.5).float()
-        child_bone_score = torch.eq(child_bone_pred, child_bone_labs).sum() \
-            / child_bone_labs.numel()
+        # Only calculate bone score for samples with tumor
+        valid_bone_preds = child_bone_pred[bone_mask == 1]
+        valid_bone_labs = child_bone_labs[bone_mask == 1]
+        if valid_bone_preds.numel() > 0:
+            child_bone_score = torch.eq(valid_bone_preds, valid_bone_labs).sum() \
+                / valid_bone_labs.numel()
+        else:
+            child_bone_score = torch.tensor(0.0).cuda()
 
         child_oc_pred = (torch.sigmoid(child_oc_x) > 0.5).float()
         child_oc_score = torch.eq(child_oc_pred, child_oc_labs).sum() \

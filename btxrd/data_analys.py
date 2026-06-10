@@ -113,6 +113,7 @@ def save_split_data(train, val, test) :
             #f_test.write(path.replace("\\", "/"))
             f_test.write("\n")
 
+
 cluster_file_1 = "Occurance_cluster/btxrd-fix-3.bin"            
 cluster_file_2 = "Occurance_cluster/btxrd-non-3.bin"
 object_1 = read_labels_cluster(cluster_file_1)
