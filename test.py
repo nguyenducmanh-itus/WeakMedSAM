@@ -51,5 +51,5 @@ from PIL import Image, ImageDraw
 # print(shape_list[0][0])
 #Draw bbx tumor in image
 plabs = torch.tensor([[1.], [1.], [1.], [1.], [0.]])
-plabs = plabs.squeeze()
-print(plabs)
+bone_mask = (plabs.squeeze() == 1)
+print(bone_mask)

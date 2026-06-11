@@ -118,15 +118,16 @@ def main():
             parent_labs,
         )
         
-        child_bone_loss = F.binary_cross_entropy_with_logits(
-            child_bone_x, 
-            child_bone_labs)
-        # Set child_bone_loss to 0 for samples without tumor (parent_labs == 0)
-        bone_mask = parent_labs.squeeze()
-        print(parent_labs)
-        print(f"Child bone loss : {child_bone_loss}")
-        child_bone_loss = child_bone_loss * bone_mask
-        print(f"Child bone loss after : {child_bone_loss}")
+        # Only compute child_bone_loss for samples with tumor (parent_labs == 1)
+        bone_mask = (parent_labs.squeeze() == 1)
+        if bone_mask.any():
+            masked_child_bone_x = child_bone_x[bone_mask]
+            masked_child_bone_labs = child_bone_labs[bone_mask]
+            child_bone_loss = F.binary_cross_entropy_with_logits(
+                masked_child_bone_x,
+                masked_child_bone_labs)
+        else:
+            child_bone_loss = torch.tensor(0.0, device=child_bone_x.device)
         
         child_occurance_loss = F.binary_cross_entropy_with_logits(
             child_oc_x,
