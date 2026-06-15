@@ -95,8 +95,11 @@ def main():
     accumulation_steps = 4
     train_loader_iter = iter(train_loader)
     batch_steps = 0
+    max_lambda_bone = args.bone_child_weight
+    max_lambda_oc = args.oc_child_weight
     for n_iter in pbar:
-        
+        curent_bone_lambda = (n_iter / len(train_loader) / args.max_epochs) * max_lambda_bone
+        current_oc_lambda = (n_iter / len(train_loader) / args.max_epochs) * max_lambda_oc 
         model.train()
         if batch_steps % accumulation_steps == 0 :
             optimizer.zero_grad()
@@ -133,8 +136,8 @@ def main():
             child_oc_x,
             child_oc_labs 
         )
-        child_bone_loss = child_bone_loss *  args.bone_child_weight
-        child_occurance_loss = child_occurance_loss * args.oc_child_weight
+        child_bone_loss = child_bone_loss *  curent_bone_lambda
+        child_occurance_loss = child_occurance_loss * current_oc_lambda
         loss = parent_loss + child_bone_loss + child_occurance_loss
         loss = loss / 4
         batch_steps += 1

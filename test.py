@@ -11,8 +11,9 @@ import pandas as pd
 import os
 import json
 from PIL import Image, ImageDraw
+from tqdm import tqdm
 
-# log_path = "logdir/classifier_train_v3"
+# log_path = "logdir/classifier_train_v4"
 # event_acc = EventAccumulator(log_path)
 # event_acc.Reload()
 
@@ -38,18 +39,49 @@ from PIL import Image, ImageDraw
 # image_path = "data/BTXRD/images/IMG000001.jpeg"
 # with open(json_path, mode="r", encoding="utf-8") as read_file :
 #     tumor_inf = json.load(read_file)
-
+# img_list = []
+# original_img = Image.open(image_path).convert("RGB")
+# original_w, original_h = original_img.size #width, heights
+# original_img = original_img.resize((512, 512))
+# image_bbx = original_img.copy()
+# image_mask = image_bbx.copy()
+# draw_bbx = ImageDraw.Draw(image_bbx)
+# draw_mask = ImageDraw.Draw(image_mask)
 # shape_list = []
+
 
 # for i in range(len(tumor_inf["shapes"])) :
 #     shape_list.append(tumor_inf["shapes"][i]["points"])
 
-# image = Image.open(image_path)
-# draw = ImageDraw.Draw(image)
-# draw.rectangle(shape_list[0], outline="red", fill=None, width=1)
-# #image.show()
-# print(shape_list[0][0])
-#Draw bbx tumor in image
-plabs = torch.tensor([[1.], [1.], [1.], [1.], [0.]])
-bone_mask = (plabs.squeeze() == 1)
-print(bone_mask)
+
+# ratio_resize_img_w, ratio_resize_img_h = (512 / original_w, 512 / original_h)     
+
+# for i in range(len(shape_list[0])) :
+#     shape_list[0][i][0] *= ratio_resize_img_w
+#     shape_list[0][i][1] *= ratio_resize_img_h
+
+# for i in range(len(shape_list[1])) :
+#     shape_list[1][i][0] *= ratio_resize_img_w
+#     shape_list[1][i][1] *= ratio_resize_img_h
+
+# new_img = Image.new("RGB", size=(512 * 3, 512))
+# num_img = 3
+
+
+# #draw.rectangle(shape_list[0], outline = "red", fill=None, width=2)
+# draw_bbx.rectangle(shape_list[0], outline = "red", fill=None, width=2)
+# draw_mask.polygon(shape_list[1], outline="red", fill="red", width=1)
+# img_list = [original_img, image_bbx, image_mask]
+# for i in range(num_img) :
+#     new_img.paste(img_list[i], (i * 512, 0))
+
+# new_img.save("Mask.jpg")
+# new_img.show()
+
+
+#print(shape_list[0])
+
+pbar = tqdm(range(1, 100), ncols=10)
+for n_iter in pbar : 
+   if n_iter % 2 == 0 :
+      print("Yes")

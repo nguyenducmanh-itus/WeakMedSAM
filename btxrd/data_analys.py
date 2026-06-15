@@ -114,14 +114,7 @@ def save_split_data(train, val, test) :
             f_test.write("\n")
 
 
-cluster_file_1 = "Occurance_cluster/btxrd-fix-3.bin"            
-cluster_file_2 = "Occurance_cluster/btxrd-non-3.bin"
-object_1 = read_labels_cluster(cluster_file_1)
-object_2 = read_labels_cluster(cluster_file_2)
-objects, non_tumor = anal_len_each_cluster(object_1)
-anal2 = anal_len_each_cluster(object_2)
-#print(f"Statics length of Clustering with condition :")
-# print_len_cluster(anal1)
-# print(f"Statics length of Clustering with non condition :")
-train, val, test = split_data_train(objects, non_tumor)
-save_split_data(train, val, test)
+with open("btxrd/splits/test.txt") as f : 
+    train_file = f.readlines()
+    
+print(len(train_file))
