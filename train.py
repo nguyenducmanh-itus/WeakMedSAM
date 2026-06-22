@@ -79,27 +79,38 @@ def main():
     )
 
     args.max_iters = args.max_epochs * len(train_loader)
-
-    optimizer = torch.optim.AdamW(
-        model.parameters(),
-        lr=args.lr,
-        weight_decay=0.01,
-    )
+    accumulation_steps = 4
+    
+    backbone_prams = []
+    head_prams = []
+    for name, param in model.module.named_parameters() : 
+        if "image_encoder" in name : 
+            backbone_prams.append(param)
+        elif "parent" in name or "child" in name : 
+            head_prams.append(param)
+    optimizer = torch.optim.AdamW([
+        {'params': backbone_prams, 'lr': args.lr * 0.1},
+        {'params': head_prams, 'lr': args.lr}
+    ], weight_decay=0.01)
+    total_update_steps = args.max_iters // accumulation_steps
     scheduler = torch.optim.lr_scheduler.OneCycleLR(
-        optimizer=optimizer, max_lr=args.lr, total_steps=args.max_iters
+        optimizer=optimizer, 
+        max_lr=[args.lr * 0.1, args.lr], 
+        total_steps=total_update_steps,
+        pct_start=0.3 
     )
 
     writer = SummaryWriter(os.path.join(args.logdir, args.index))
 
     pbar = tqdm(range(1, args.max_iters + 1), ncols=100)
-    accumulation_steps = 4
+    
     train_loader_iter = iter(train_loader)
     batch_steps = 0
     max_lambda_bone = args.bone_child_weight
     max_lambda_oc = args.oc_child_weight
     for n_iter in pbar:
-        curent_bone_lambda = (n_iter / len(train_loader) / args.max_epochs) * max_lambda_bone
-        current_oc_lambda = (n_iter / len(train_loader) / args.max_epochs) * max_lambda_oc 
+        curent_bone_lambda = (n_iter / args.max_iters) * max_lambda_bone
+        current_oc_lambda = (n_iter / args.max_iters) * max_lambda_oc
         model.train()
         if batch_steps % accumulation_steps == 0 :
             optimizer.zero_grad()
@@ -111,35 +122,41 @@ def main():
             datapack = next(train_loader_iter)
 
         imgs = datapack["img"].cuda()       
-        parent_labs = datapack["plab"].cuda()
-        child_bone_labs = datapack["bone_clab"].cuda()
-        child_oc_labs = datapack["oc_clab"].cuda()
+        parent_labs = datapack["plab"].cuda().float()
+        child_bone_labs = datapack["bone_clab"].cuda().float()
+        child_oc_labs = datapack["oc_clab"].cuda().float()
+        
         parent_x, child_bone_x, child_oc_x, _ = model(imgs)
 
+        #Parent loss 
         parent_loss = F.binary_cross_entropy_with_logits(
             parent_x,
             parent_labs,
         )
         
+        #Bone loss
         # Only compute child_bone_loss for samples with tumor (parent_labs == 1)
-        bone_mask = (parent_labs.squeeze() == 1)
+        bone_mask = parent_labs[:, 0].bool()
+        
         if bone_mask.any():
-            masked_child_bone_x = child_bone_x[bone_mask]
-            masked_child_bone_labs = child_bone_labs[bone_mask]
-            child_bone_loss = F.binary_cross_entropy_with_logits(
-                masked_child_bone_x,
-                masked_child_bone_labs)
+            bone_logits = child_bone_x[bone_mask]
+            bone_targets = child_bone_labs[bone_mask]
+            child_bone_loss = F.binary_cross_entropy_with_logits(bone_logits, bone_targets)
+            bone_pred = (torch.sigmoid(bone_logits) > 0.5).float()
+            child_bone_score = (bone_pred == bone_targets).float().mean()
         else:
-            child_bone_loss = torch.tensor(0.0, device=child_bone_x.device)
+            child_bone_loss = child_bone_x.new_tensor(0.0)
+            child_bone_score = child_bone_x.new_tensor(0.0)
         
         child_occurance_loss = F.binary_cross_entropy_with_logits(
             child_oc_x,
             child_oc_labs 
         )
-        child_bone_loss = child_bone_loss *  curent_bone_lambda
-        child_occurance_loss = child_occurance_loss * current_oc_lambda
-        loss = parent_loss + child_bone_loss + child_occurance_loss
-        loss = loss / 4
+        
+        bone_loss = child_bone_loss *  curent_bone_lambda
+        occurance_loss = child_occurance_loss * current_oc_lambda
+        loss = parent_loss + bone_loss + occurance_loss
+        loss = loss / accumulation_steps
         batch_steps += 1
         loss.backward()
         if batch_steps % accumulation_steps == 0 : 

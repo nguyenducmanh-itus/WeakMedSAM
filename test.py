@@ -12,27 +12,28 @@ import os
 import json
 from PIL import Image, ImageDraw
 from tqdm import tqdm
+from samus.build_sam_us import samus_model_registry
 
-# log_path = "logdir/classifier_train_v4"
-# event_acc = EventAccumulator(log_path)
-# event_acc.Reload()
+log_path = "runs/lambda_0.005"
+event_acc = EventAccumulator(log_path)
+event_acc.Reload()
 
 
 
-# tag_names = ['train/parent loss', 'train/train loss', 'train/child bone loss', 'train/child occurance loss']
+tag_names = ['train/parent loss', 'train/train loss', 'train/child bone loss', 'train/child occurance loss']
 
-# with open("train_loss.txt", "w") as f :
-#    for tag_name in tag_names :
-#       if tag_name in event_acc.Tags()['scalars'] :         
-#             events = event_acc.Scalars(tag_name)
-#             df = pd.DataFrame([(e.step, e.value) for e in events], columns=['Step', 'Value'])
-#             f.write(tag_name)
-#             f.write("\n")
-#             for i in range(len(df)) :
-#                f.write(str(df.loc[i, "Step"]))
-#                f.write(" ")
-#                f.write(str(df.loc[i, "Value"]))
-#                f.write("\n")
+with open("train_loss.txt", "w") as f :
+   for tag_name in tag_names :
+      if tag_name in event_acc.Tags()['scalars'] :         
+            events = event_acc.Scalars(tag_name)
+            df = pd.DataFrame([(e.step, e.value) for e in events], columns=['Step', 'Value'])
+            f.write(tag_name)
+            f.write("\n")
+            for i in range(len(df)) :
+               f.write(str(df.loc[i, "Step"]))
+               f.write(" ")
+               f.write(str(df.loc[i, "Value"]))
+               f.write("\n")
 
 
 # json_path = "data/BTXRD/Annotations/IMG000001.json"
@@ -81,7 +82,30 @@ from tqdm import tqdm
 
 #print(shape_list[0])
 
-pbar = tqdm(range(1, 100), ncols=10)
-for n_iter in pbar : 
-   if n_iter % 2 == 0 :
-      print("Yes")
+class my_Model(nn.Module) :
+   def __init__(self, input, output) :
+      super().__init__()
+      self.l1 = nn.Linear(input, 5)
+      self.l2 = nn.Linear(5, output)
+   
+   def forward(self, X) :
+      return self.l2(self.l1(X))
+   
+my_model = my_Model(1, 3)
+spec_param = []
+for name, param in my_model.named_parameters() :
+   if "l1" in name :
+      spec_param.append(param)
+
+print(f"Parameters before update : ")
+for name, param in my_model.named_parameters() :
+   print(param)
+   
+with torch.no_grad() :
+   for param in spec_param :
+      param *= 0.1
+
+print(f"Parameters after update : ")
+for name, param in my_model.named_parameters() :
+   print(param)
+
