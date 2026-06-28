@@ -8,6 +8,7 @@ import numpy as np
 from torchvision import models, transforms
 from torch.utils.data import Dataset, DataLoader
 from attention_mil import AttentionMIL
+import argparse
 
 # =====================================================================
 # GIAI ĐOẠN 1: TẠO BAG (CẮT ẢNH VÀ LƯU PATCHES TENSOR)
@@ -168,8 +169,14 @@ def train_and_extract_boxes(pt_dir):
 
 if __name__ == "__main__":
     # Test chạy thử (Nhớ bỏ comment để chạy thật)
-    path_img = "data/BTXRD/images"
-    df = pd.read_excel("data/BTXRD/dataset.xlsx")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--data_path", type=str)
+    parser.add_argument("--save_path", type=str)
+    parser.add_argument("--data_frame", type=str)
+    args = parser.parse_args()
+    path_img = args.data_path
+    
+    df = pd.read_excel(args.data_frame)
     for i in range(len(df)) :
         img = df.loc[i, "image_id"]
         label = df.loc[i, "tumor"]
@@ -181,7 +188,7 @@ if __name__ == "__main__":
         
         extract_and_save_bag_patches(os.path.join(path_img, img_path), 
                                      label=label, 
-                                     save_dir='./patch_tensors')
+                                     save_dir=args.save_path)
     #pseudo_boxes = train_and_extract_boxes('./patch_tensors')
     #pass
                 
