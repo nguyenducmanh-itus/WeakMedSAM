@@ -163,10 +163,11 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
         runing_loss = 0.0
         try : 
             datapack = next(train_loader_iter)
-            print(type(datapack))
+            
         except :
             train_loader_iter = iter(train_dataloader)
             datapack = next(train_loader_iter)
+        print(f"Type of datapack : {type(datapack)}")
         patches = datapack["bag_data"].to(device) 
         label = datapack["label"].to(device)     
         
