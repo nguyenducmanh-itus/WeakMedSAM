@@ -82,12 +82,15 @@ from samus.build_sam_us import samus_model_registry
 
 
 #print(shape_list[0])
-data = torch.load(
-                "output_patch_image/IMG000712.pt",
-                weights_only=False
-            )
-
-print(data["label"])
-
+pt_dir = "output_patch_image"
+pt_file = [os.path.join(pt_dir, file_name) for file_name in os.listdir(pt_dir)]
+# for f in pt_file : 
+#     data = torch.load(
+#                     f,
+#                     weights_only=False
+#                 )
+#     if len(torch.tensor([data["label"]])) == 0:
+#         print(f) 
    
-
+t = torch.tensor([])
+print(len(t))
