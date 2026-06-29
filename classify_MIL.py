@@ -5,11 +5,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
+import random
 from torchvision import models, transforms
 from torch.utils.data import Dataset, DataLoader
 from attention_mil import AttentionMIL
 import argparse
-
+from tqdm import tqdm
 # =====================================================================
 # GIAI ĐOẠN 1: TẠO BAG (CẮT ẢNH VÀ LƯU PATCHES TENSOR)
 # =====================================================================
@@ -59,8 +60,8 @@ def extract_and_save_bag_patches(image_path, label, save_dir, patch_size=224, st
 
 #Data Module for Bag dataset
 class BagDataset(Dataset):
-    def __init__(self,dir_img, pt_dir, patch_size=224):
-        self.pt_files = [os.path.join(pt_dir, f) for f in os.listdir(pt_dir) if f.endswith('.pt')]
+    def __init__(self,dir_img, pt_file, patch_size=224):
+        self.pt_files = pt_file
         self.patch_size = patch_size
         self.dir_img = dir_img
         self.preprocess = transforms.Compose([
@@ -92,8 +93,10 @@ class BagDataset(Dataset):
             
         bag_tensor = torch.stack(patches)
         
-        return bag_tensor, torch.tensor([label], dtype=torch.float32), \
-            coords, img_path
+        return {"bag_data" : bag_tensor, 
+                "label" : torch.tensor([label], dtype=torch.float32), 
+                "coord" : coords, 
+                "img_path" : img_path}
 def collate_fn(batch):
     # Trả về 1 ảnh duy nhất (với N patches) mỗi bước
     patches, label, coords, img_path = batch[0]
@@ -101,16 +104,31 @@ def collate_fn(batch):
 
 def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
     os.makedirs(save_dir, exist_ok=True)
+    os.makedirs(checkpoint_dir, exist_ok=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     
     model = AttentionMIL(num_classes=1, num_frozen_blocks=10).to(device)
+    all_pt_files = [os.path.join(pt_dir, f) for f in os.listdir(pt_dir)]
+    random.seed(42)
+    random.shuffle(all_pt_files)
+    train_split = int(0.8 * len(all_pt_files))
+    val_split = int(0.1 * len(all_pt_files))
     
-    dataset = BagDataset(dir_img, pt_dir)
+    train_files = all_pt_files[:train_split]
+    val_files = all_pt_files[train_split:train_split+val_split]
+    test_files = all_pt_files[train_split+val_split:]
     
+    train_dataset = BagDataset(dir_img, train_files)
+    val_dataset = BagDataset(dir_img, val_files)
+    test_dataset = BagDataset(dir_img, test_files)
     
-    dataloader = DataLoader(dataset, batch_size=1, shuffle=True, collate_fn=collate_fn, num_workers=4) 
-    
+    train_dataloader = DataLoader(train_dataset, batch_size=1, shuffle=True, 
+                            collate_fn=collate_fn, num_workers=4) 
+    val_dataloader = DataLoader(val_dataset, batch_size=1, shuffle=True, 
+                            collate_fn=collate_fn, num_workers=4)
+    test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=True, 
+                            collate_fn=collate_fn, num_workers=4)
     
     vit_params = []
     head_params = []
@@ -134,58 +152,91 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
     
     model.train()
     epochs = 10
-    for epoch in range(epochs):
+    max_iters = epochs * len(train_dataloader)
+    train_loader_iter = iter(train_dataloader)
+    batch_step = 0
+    pbar = tqdm(range(1, max_iters + 1), ncols=100)
+    for n_iter in pbar :
         optimizer.zero_grad()
         runing_loss = 0.0
-        for i, (patches, label, _, image_path) in enumerate(dataloader):
-            patches = patches.to(device) 
-            label = label.to(device)     
+        try : 
+            datapack = next(train_loader_iter)
+        except :
+            train_loader_iter = iter(train_dataloader)
+            datapack = next(train_loader_iter)
+        patches = datapack["bag_data"].to(device) 
+        label = datapack["label"].to(device)     
+        
+        logits, _ = model(patches, chunk_size=16)
+        loss = criterion(logits.squeeze(0), label)
+        runing_loss += loss.item()
+        loss = loss / accumulation_steps
+        loss.backward()
+        
+        if (batch_step + 1) % accumulation_steps == 0:
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            optimizer.step()
+            optimizer.zero_grad()
             
-            logits, _ = model(patches, chunk_size=16)
-            loss = criterion(logits.squeeze(0), label)
-            runing_loss += loss.item()
-            loss = loss / accumulation_steps
-            loss.backward()
-            
-            if (i + 1) % accumulation_steps == 0:
-                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-                optimizer.step()
-                optimizer.zero_grad()
+        if (batch_step + 1) % 100 == 0 :
+            avg_loss = runing_loss / 100 
+            print(f"iter {n_iter} | Loss {avg_loss}")
+        if n_iter % (2 * len(train_dataloader)) == 0 :
+            checkpoint_path = os.path.join(checkpoint_dir, 
+                                           f'mil_vit_{n_iter/len(train_dataloader)}.pth')
+            torch.save(model.state_dict(), checkpoint_path)
+        if n_iter % len(train_dataloader) == 0 :
+            model.eval()
+            val_loss = 0.0
+            correct = 0.0
+            total = 0
+            with torch.no_grad() :
+                for pack in val_dataloader :
+                    patches = pack["bag_data"].to(device)
+                    label = pack["bag_data"].to(device)
+                    logits, _ = model(patches, chunk_size=32) 
                 
-            if (i + 1) % 100 == 0 :
-                avg_loss = runing_loss / 100 
-                print(f"Epoch {epoch}, iter [{i + 1}/ {len(dataloader)}], Loss : {avg_loss:.4f}")
-        checkpoint_path = os.path.join(checkpoint_dir, f'mil_vit_epoch_{epoch+1}.pth')
-        torch.save(model.state_dict(), checkpoint_path)
-        print(f"Epoch {epoch+1} finished.")
-
-    
+                    loss = criterion(logits.squeeze(0), label.squeeze(0))
+                    val_loss += loss.item()
+                    
+                    
+                    pred = (torch.sigmoid(logits.squeeze(0)) > 0.5).float()
+                    if pred.item() == label.item():
+                        correct += 1
+                    total += 1
+                
+                avg_val_loss = val_loss / len(val_dataloader)
+                val_acc = (correct / total) * 100
+                print(f"Valid Loss : {avg_val_loss:.4f} | Valid accuracy : {val_acc:.2f}%" )
+    print("Create Bounding box")
     model.eval()
-    
     patch_size = 224
     padding = 20
-    
-    with torch.no_grad():
-        for patches, label, coords, img_path in dataloader:
-            if label.item() == 0: 
-                continue
+    def extract_bbox(loader) :
+        with torch.no_grad():
+            for datapack in loader:
+                if datapack["label"].item() == 0: 
+                    continue
+                    
+                patches = datapack["bag_data"].to(device)
+                _, A = model(patches, chunk_size=32) 
                 
-            patches = patches.to(device)
-            _, A = model(patches, chunk_size=32) 
-            
-            best_patch_idx = torch.argmax(A, dim=1).item()
-            best_x, best_y = coords[best_patch_idx]
-            
-            x_min = max(0, best_x - padding)
-            y_min = max(0, best_y - padding)
-            x_max = best_x + patch_size + padding
-            y_max = best_y + patch_size + padding
-            img = cv.imread(os.path.join(dir_img, img_path))
-            crop_img = img[y_min : y_max, x_min : x_max]
-            file_name = img_path.split(".")
-            new_file_name = f"{file_name[0]}_crop{file_name[1]}"
-            cv.imwrite(os.path.join(save_dir, new_file_name), crop_img)
-            
+                best_patch_idx = torch.argmax(A, dim=1).item()
+                best_x, best_y = datapack["coord"][best_patch_idx]
+                
+                x_min = max(0, best_x - padding)
+                y_min = max(0, best_y - padding)
+                x_max = best_x + patch_size + padding
+                y_max = best_y + patch_size + padding
+                img = cv.imread(os.path.join(dir_img, datapack["img_path"]))
+                crop_img = img[y_min : y_max, x_min : x_max]
+                file_name = datapack["img_path"].split(".")
+                new_file_name = f"{file_name[0]}_crop{file_name[1]}"
+                cv.imwrite(os.path.join(save_dir, new_file_name), crop_img)
+    extract_bbox(train_dataloader)
+    extract_bbox(val_dataloader)
+    extract_bbox(test_dataloader)
+          
             
      
     

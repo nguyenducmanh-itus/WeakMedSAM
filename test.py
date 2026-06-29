@@ -81,16 +81,6 @@ from samus.build_sam_us import samus_model_registry
 # new_img.show()
 
 
-#print(shape_list[0])
-pt_dir = "output_patch_image"
-pt_file = [os.path.join(pt_dir, file_name) for file_name in os.listdir(pt_dir)]
-# for f in pt_file : 
-#     data = torch.load(
-#                     f,
-#                     weights_only=False
-#                 )
-#     if len(torch.tensor([data["label"]])) == 0:
-#         print(f) 
-   
-t = torch.tensor([])
-print(len(t))
+pdm = tqdm(range(1, 10000), ncols=100)
+for n_iter in pdm :
+    print(n_iter)
