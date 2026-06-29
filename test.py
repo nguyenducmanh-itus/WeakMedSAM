@@ -83,7 +83,7 @@ from samus.build_sam_us import samus_model_registry
 
 #print(shape_list[0])
 data = torch.load(
-                "output_patch_image/IMG000001.pt",
+                "output_patch_image/IMG000002.pt",
                 weights_only=False
             )
 

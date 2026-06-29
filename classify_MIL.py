@@ -81,6 +81,7 @@ class BagDataset(Dataset):
         label = data['label']
         
         print(label)
+        print(self.pt_files[idx])
         img = cv.imread(os.path.join(self.dir_img, img_path))
         img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
         
