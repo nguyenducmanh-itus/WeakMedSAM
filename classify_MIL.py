@@ -102,7 +102,12 @@ class BagDataset(Dataset):
 def collate_fn(batch):
     # Trả về 1 ảnh duy nhất (với N patches) mỗi bước
     patches, label, coords, img_path = batch[0]
-    return patches, label, coords, img_path
+    return {
+        "bag_data" : patches, 
+        "label" : label, 
+        "coord" : coords, 
+        "img_path" : img_path
+        }
 
 def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
     os.makedirs(save_dir, exist_ok=True)
