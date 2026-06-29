@@ -185,24 +185,25 @@ if __name__ == "__main__":
     # Test chạy thử (Nhớ bỏ comment để chạy thật)
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_path", type=str)
-    parser.add_argument("--save_path", type=str)
+    parser.add_argument("--save_dir", type=str)
     parser.add_argument("--data_frame", type=str)
+    parser.add_argument("--pt_dir", type=str)
     args = parser.parse_args()
     path_img = args.data_path
     
-    df = pd.read_excel(args.data_frame)
-    for i in range(len(df)) :
-        img = df.loc[i, "image_id"]
-        label = df.loc[i, "tumor"]
-        format = img.split(".")
-        if format[1] == "jpg" :
-            img_path = f"{format[0]}.jpeg"
-        else :
-            img_path = img
+    # df = pd.read_excel(args.data_frame)
+    # for i in range(len(df)) :
+    #     img = df.loc[i, "image_id"]
+    #     label = df.loc[i, "tumor"]
+    #     format = img.split(".")
+    #     if format[1] == "jpg" :
+    #         img_path = f"{format[0]}.jpeg"
+    #     else :
+    #         img_path = img
         
-        extract_and_save_bag_patches(os.path.join(path_img, img_path), 
-                                     label=label, 
-                                     save_dir=args.save_path)
-    #pseudo_boxes = train_and_extract_boxes('./patch_tensors')
+    #     extract_and_save_bag_patches(os.path.join(path_img, img_path), 
+    #                                  label=label, 
+    #                                  save_dir=args.save_path)
+    pseudo_boxes = train_and_extract_boxes(args.data_path, args.pt_dir, args.save_dir)
     #pass
                 
