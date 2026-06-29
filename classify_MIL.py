@@ -15,8 +15,9 @@ import argparse
 # =====================================================================
 def extract_and_save_bag_patches(image_path, label, save_dir, patch_size=224, stride=112):
     """
-    Cắt ảnh bằng sliding window, bỏ patch đen, transform thành Tensor 
-    [N, 3, 224, 224] và lưu thành file .pt
+    Cut image to patchs by sliding widown with components : 
+        - step = 112  
+        - size of batch is 224
     """
     os.makedirs(save_dir, exist_ok=True)
     
@@ -24,7 +25,7 @@ def extract_and_save_bag_patches(image_path, label, save_dir, patch_size=224, st
 
     img = cv.imread(image_path)
     if img is None:
-        print(f"Không thể đọc ảnh: {image_path}")
+        print(f"Can't read image : {image_path}")
         return
         
     img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
@@ -56,13 +57,12 @@ def extract_and_save_bag_patches(image_path, label, save_dir, patch_size=224, st
 
     
 
-# =====================================================================
-# GIAI ĐOẠN 2: DATALOADER CHO TẬP DỮ LIỆU "TÚI"
-# =====================================================================
+#Data Module for Bag dataset
 class BagDataset(Dataset):
-    def __init__(self, pt_dir, patch_size=224):
+    def __init__(self,dir_img, pt_dir, patch_size=224):
         self.pt_files = [os.path.join(pt_dir, f) for f in os.listdir(pt_dir) if f.endswith('.pt')]
         self.patch_size = patch_size
+        self.dir_img = dir_img
         self.preprocess = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
@@ -77,18 +77,16 @@ class BagDataset(Dataset):
         coords = data['coords']
         label = data['label']
         
-        # Đọc ảnh gốc một lần duy nhất
-        img = cv.imread(img_path)
+
+        img = cv.imread(os.path.join(self.dir_img, img_path))
         img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
         
-        # Cắt ảnh động dựa trên tọa độ đã lưu
         patches = []
         for x, y in coords:
             patch = img[y:y+self.patch_size, x:x+self.patch_size]
             patch_tensor = self.preprocess(patch)
             patches.append(patch_tensor)
             
-        # Gom các patch lại thành Tensor [N, 3, 224, 224]
         bag_tensor = torch.stack(patches)
         
         return bag_tensor, torch.tensor([label], dtype=torch.float32), coords, img_path
@@ -98,22 +96,22 @@ def collate_fn(batch):
     patches, label, coords, img_path = batch[0]
     return patches, label, coords, img_path
 
-def train_and_extract_boxes(pt_dir):
+def train_and_extract_boxes(dir_img, pt_dir, save_dir):
+    os.makedirs(save_dir, exist_ok=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    # Khởi tạo mô hình, đóng băng 10/12 block đầu tiên của ViT
+    
     model = AttentionMIL(num_classes=1, num_frozen_blocks=10).to(device)
     
-    dataset = BagDataset(pt_dir)
+    dataset = BagDataset(dir_img, pt_dir)
     
-    # Quan trọng: Đặt num_workers=4 hoặc 8 để CPU cắt ảnh song song, không làm GPU bị đói data
+    
     dataloader = DataLoader(dataset, batch_size=1, shuffle=True, collate_fn=collate_fn, num_workers=4) 
     
-    # Tách Differential LR: Backbone học chậm, Attention head học nhanh
+    
     vit_params = []
     head_params = []
     for name, param in model.named_parameters():
-        # BỎ QUA CÁC THAM SỐ ĐÃ BỊ ĐÓNG BĂNG ĐỂ TRÁNH LÃNG PHÍ VRAM
         if not param.requires_grad:
             continue
             
@@ -123,23 +121,22 @@ def train_and_extract_boxes(pt_dir):
             head_params.append(param)
             
     optimizer = torch.optim.AdamW([
-        {'params': vit_params, 'lr': 1e-5}, # LR nhỏ cho các layer cuối của ViT
-        {'params': head_params, 'lr': 1e-4} # LR lớn hơn cho lớp Attention MIL
+        {'params': vit_params, 'lr': 1e-5}, 
+        {'params': head_params, 'lr': 1e-4} 
     ], weight_decay=1e-4)
     
     criterion = nn.BCEWithLogitsLoss()
     accumulation_steps = 16 
     
-    # --- HUẤN LUYỆN ---
+    
     model.train()
     epochs = 10
     for epoch in range(epochs):
         optimizer.zero_grad()
         for i, (patches, label, _, _) in enumerate(dataloader):
-            patches = patches.to(device) # Shape [N, 3, 224, 224]
-            label = label.to(device)     # Shape [1]
+            patches = patches.to(device) 
+            label = label.to(device)     
             
-            # Điều chỉnh chunk_size tùy thuộc vào dung lượng GPU (mặc định 16)
             logits, _ = model(patches, chunk_size=16) 
             
             loss = criterion(logits.squeeze(0), label.squeeze(0))
@@ -153,9 +150,9 @@ def train_and_extract_boxes(pt_dir):
                 
         print(f"Epoch {epoch+1} finished.")
 
-    # --- INFERENCE VÀ TÌM PSEUDO-BBOX ---
+    
     model.eval()
-    pseudo_boxes_dict = {}
+    
     patch_size = 224
     padding = 20
     
@@ -174,10 +171,15 @@ def train_and_extract_boxes(pt_dir):
             y_min = max(0, best_y - padding)
             x_max = best_x + patch_size + padding
             y_max = best_y + patch_size + padding
+            img = cv.imread(os.path.join(dir_img, img_path))
+            crop_img = img[y_min : y_max, x_min : x_max]
+            file_name = img_path.split(".")
+            new_file_name = f"{file_name[0]}_crop{file_name[1]}"
+            cv.imwrite(os.path.join(save_dir, new_file_name), crop_img)
             
-            pseudo_boxes_dict[img_path] = (x_min, y_min, x_max, y_max)
             
-    return pseudo_boxes_dict
+     
+    
 
 if __name__ == "__main__":
     # Test chạy thử (Nhớ bỏ comment để chạy thật)
