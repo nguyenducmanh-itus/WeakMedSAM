@@ -80,7 +80,7 @@ class BagDataset(Dataset):
         coords = data['coords']
         label = data['label']
         
-
+        print(label)
         img = cv.imread(os.path.join(self.dir_img, img_path))
         img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
         

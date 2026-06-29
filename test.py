@@ -14,9 +14,9 @@ from PIL import Image, ImageDraw
 from tqdm import tqdm
 from samus.build_sam_us import samus_model_registry
 
-log_path = "runs"
-event_acc = EventAccumulator(log_path)
-event_acc.Reload()
+# log_path = "runs"
+# event_acc = EventAccumulator(log_path)
+# event_acc.Reload()
 
 
 ##This following code save loss to .txt
@@ -82,9 +82,12 @@ event_acc.Reload()
 
 
 #print(shape_list[0])
-df = pd.read_excel("data/BTXRD/dataset.xlsx")
-body_features = df.loc[:, "hand" : "shoulder-joint"].columns
-statics_body_map = {}
+data = torch.load(
+                "output_patch_image/IMG000001.pt",
+                weights_only=False
+            )
+
+print(data["label"])
 
    
 
