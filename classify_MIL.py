@@ -93,10 +93,12 @@ class BagDataset(Dataset):
             
         bag_tensor = torch.stack(patches)
         
-        return {"bag_data" : bag_tensor, 
+        return {
+                "bag_data" : bag_tensor, 
                 "label" : torch.tensor([label], dtype=torch.float32), 
                 "coord" : coords, 
-                "img_path" : img_path}
+                "img_path" : img_path
+            }
 def collate_fn(batch):
     # Trả về 1 ảnh duy nhất (với N patches) mỗi bước
     patches, label, coords, img_path = batch[0]
@@ -161,6 +163,7 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
         runing_loss = 0.0
         try : 
             datapack = next(train_loader_iter)
+            print(type(datapack))
         except :
             train_loader_iter = iter(train_dataloader)
             datapack = next(train_loader_iter)
