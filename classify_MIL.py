@@ -173,6 +173,7 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
             train_loader_iter = iter(train_dataloader)
             datapack = next(train_loader_iter)
         print(f"Type of datapack : {type(datapack)}")
+        print("Value of datapack : ", datapack["bag_data"])
         patches = datapack["bag_data"].to(device) 
         label = datapack["label"].to(device)     
         
