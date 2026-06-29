@@ -140,7 +140,8 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir):
             patches = patches.to(device) 
             label = label.to(device)     
             
-            logits, _ = model(patches, chunk_size=16) 
+            logits, _ = model(patches, chunk_size=16)
+            print(logits.shape)
             
             loss = criterion(logits.squeeze(0), label.squeeze(0))
             loss = loss / accumulation_steps
