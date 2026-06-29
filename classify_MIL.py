@@ -93,21 +93,12 @@ class BagDataset(Dataset):
             
         bag_tensor = torch.stack(patches)
         
-        return {
-                "bag_data" : bag_tensor, 
-                "label" : torch.tensor([label], dtype=torch.float32), 
-                "coord" : coords, 
-                "img_path" : img_path
-            }
+        return bag_tensor, torch.tensor([label], dtype=torch.float32), coords, img_path
+            
 def collate_fn(batch):
     # Trả về 1 ảnh duy nhất (với N patches) mỗi bước
     patches, label, coords, img_path = batch[0]
-    return {
-        "bag_data" : patches, 
-        "label" : label, 
-        "coord" : coords, 
-        "img_path" : img_path
-        }
+    return patches, label, coords, img_path
 
 def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
     os.makedirs(save_dir, exist_ok=True)
@@ -167,15 +158,14 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
         optimizer.zero_grad()
         runing_loss = 0.0
         try : 
-            datapack = next(train_loader_iter)
+            patches, label, _, _ = next(train_loader_iter)
             
         except :
             train_loader_iter = iter(train_dataloader)
-            datapack = next(train_loader_iter)
-        print(f"Type of datapack : {type(datapack)}")
-        print("Value of datapack : ", datapack["bag_data"])
-        patches = datapack["bag_data"].to(device) 
-        label = datapack["label"].to(device)     
+            patches, label, _, _ = next(train_loader_iter)
+        
+        patches = patches.to(device) 
+        label = label.to(device)     
         
         logits, _ = model(patches, chunk_size=16)
         loss = criterion(logits.squeeze(0), label)
@@ -201,9 +191,9 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
             correct = 0.0
             total = 0
             with torch.no_grad() :
-                for pack in val_dataloader :
-                    patches = pack["bag_data"].to(device)
-                    label = pack["bag_data"].to(device)
+                for patches, label, _, _ in val_dataloader :
+                    patches = patches.to(device)
+                    label = label.to(device)
                     logits, _ = model(patches, chunk_size=32) 
                 
                     loss = criterion(logits.squeeze(0), label.squeeze(0))
@@ -224,23 +214,23 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
     padding = 20
     def extract_bbox(loader) :
         with torch.no_grad():
-            for datapack in loader:
-                if datapack["label"].item() == 0: 
+            for patches, label, coords, image_path in loader:
+                if label.item() == 0: 
                     continue
                     
-                patches = datapack["bag_data"].to(device)
+                patches = patches.to(device)
                 _, A = model(patches, chunk_size=32) 
                 
                 best_patch_idx = torch.argmax(A, dim=1).item()
-                best_x, best_y = datapack["coord"][best_patch_idx]
+                best_x, best_y = coords[best_patch_idx]
                 
                 x_min = max(0, best_x - padding)
                 y_min = max(0, best_y - padding)
                 x_max = best_x + patch_size + padding
                 y_max = best_y + patch_size + padding
-                img = cv.imread(os.path.join(dir_img, datapack["img_path"]))
+                img = cv.imread(os.path.join(dir_img, image_path))
                 crop_img = img[y_min : y_max, x_min : x_max]
-                file_name = datapack["img_path"].split(".")
+                file_name = image_path.split(".")
                 new_file_name = f"{file_name[0]}_crop{file_name[1]}"
                 cv.imwrite(os.path.join(save_dir, new_file_name), crop_img)
     extract_bbox(train_dataloader)
