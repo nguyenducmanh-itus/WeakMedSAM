@@ -99,7 +99,7 @@ def collate_fn(batch):
     patches, label, coords, img_path = batch[0]
     return patches, label, coords, img_path
 
-def train_and_extract_boxes(dir_img, pt_dir, save_dir):
+def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
     os.makedirs(save_dir, exist_ok=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
@@ -136,12 +136,14 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir):
     epochs = 10
     for epoch in range(epochs):
         optimizer.zero_grad()
+        runing_loss = 0.0
         for i, (patches, label, _, image_path) in enumerate(dataloader):
             patches = patches.to(device) 
             label = label.to(device)     
             
             logits, _ = model(patches, chunk_size=16)
             loss = criterion(logits.squeeze(0), label)
+            runing_loss += loss.item()
             loss = loss / accumulation_steps
             loss.backward()
             
@@ -150,6 +152,11 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir):
                 optimizer.step()
                 optimizer.zero_grad()
                 
+            if (i + 1) % 100 == 0 :
+                avg_loss = runing_loss / 100 
+                print(f"Epoch {epoch}, iter [{i + 1}/ {len(dataloader)}], Loss : {avg_loss:.4f}")
+        checkpoint_path = os.path.join(checkpoint_dir, f'mil_vit_epoch_{epoch+1}.pth')
+        torch.save(model.state_dict(), checkpoint_path)
         print(f"Epoch {epoch+1} finished.")
 
     
@@ -190,6 +197,7 @@ if __name__ == "__main__":
     parser.add_argument("--save_dir", type=str)
     parser.add_argument("--data_frame", type=str)
     parser.add_argument("--pt_dir", type=str)
+    parser.add_argument("--checkpoint_dir", type=str)
     args = parser.parse_args()
     path_img = args.data_path
     
@@ -206,6 +214,7 @@ if __name__ == "__main__":
     #     extract_and_save_bag_patches(os.path.join(path_img, img_path), 
     #                                  label=label, 
     #                                  save_dir=args.save_path)
-    pseudo_boxes = train_and_extract_boxes(args.data_path, args.pt_dir, args.save_dir)
+    pseudo_boxes = train_and_extract_boxes(args.data_path, args.pt_dir, args.save_dir, \
+        args.checkpoint_dir)
     #pass
                 
