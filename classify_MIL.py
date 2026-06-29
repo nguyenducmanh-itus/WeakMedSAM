@@ -72,7 +72,10 @@ class BagDataset(Dataset):
         return len(self.pt_files)
         
     def __getitem__(self, idx):
-        data = torch.load(self.pt_files[idx])
+        data = torch.load(
+                self.pt_files[idx],
+                weights_only=False
+            )
         img_path = data['image_path']
         coords = data['coords']
         label = data['label']
