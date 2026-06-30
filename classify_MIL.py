@@ -154,9 +154,10 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
     train_loader_iter = iter(train_dataloader)
     batch_step = 0
     pbar = tqdm(range(1, max_iters + 1), ncols=100)
+    runing_loss = 0.0
+    optimizer.zero_grad()
     for n_iter in pbar :
-        optimizer.zero_grad()
-        runing_loss = 0.0
+        
         try : 
             patches, label, _, _ = next(train_loader_iter)
             
@@ -173,12 +174,12 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
         loss = loss / accumulation_steps
         loss.backward()
         
-        if (batch_step + 1) % accumulation_steps == 0:
+        if n_iter % accumulation_steps == 0:
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
             optimizer.zero_grad()
             
-        if (batch_step + 1) % 100 == 0 :
+        if (n_iter) % 100 == 0 :
             avg_loss = runing_loss / 100 
             print(f"iter {n_iter} | Loss {avg_loss}")
         if n_iter % (2 * len(train_dataloader)) == 0 :

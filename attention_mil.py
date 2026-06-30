@@ -27,6 +27,7 @@ class AttentionMIL(nn.Module) :
         self.classifier = nn.Linear(feature_dim, num_classes)        
 
     def forward(self, patches, chunk_size = 16) :
+        print(patches.shape)
         features = []
         for i in range(0, patches.size(0), chunk_size):
             chunk = patches[i : i + chunk_size]
