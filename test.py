@@ -82,4 +82,4 @@ from samus.build_sam_us import samus_model_registry
 # new_img.show()
 
 
-img = cv.imread("data/BTXRD/")
+indices = torch.randperm(15)[10]
