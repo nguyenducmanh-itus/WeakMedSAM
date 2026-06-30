@@ -111,7 +111,7 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
     os.makedirs(checkpoint_dir, exist_ok=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    print("Memory when load model")
+    #print("Memory when load model")
     model = AttentionMIL(num_classes=1, num_frozen_blocks=10).to(device)
     all_pt_files = [os.path.join(pt_dir, f) for f in os.listdir(pt_dir)]
     random.seed(42)
@@ -134,7 +134,7 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
     test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=True, 
                             collate_fn=collate_fn, num_workers=4)
     
-    print_memory("Memory after dataloader")
+    #print_memory("Memory after dataloader")
     vit_params = []
     head_params = []
     for name, param in model.named_parameters():
@@ -153,7 +153,7 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
     
     criterion = nn.BCEWithLogitsLoss()
     accumulation_steps = 16 
-    
+    MAX_PATCHES = 64
     
     model.train()
     epochs = 10
@@ -168,17 +168,20 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
         except :
             train_loader_iter = iter(train_dataloader)
             patches, label, _, _ = next(train_loader_iter)
-        print_memory("Memory after load data")
+        if patches.size(0) > MAX_PATCHES : 
+            indices = torch.randperm(patches.size(0), device=device)[MAX_PATCHES]
+            patches = patches[indices]
+        #print_memory("Memory after load data")
         patches = patches.to(device) 
         label = label.to(device)     
         
         logits, _ = model(patches, chunk_size=16)
-        print_memory("Memory after load data to model")
+        #print_memory("Memory after load data to model")
         loss = criterion(logits.squeeze(0), label)
         runing_loss += loss.item()
         loss = loss / accumulation_steps
         loss.backward()
-        print_memory("Memory after backward")
+        #print_memory("Memory after backward")
         if n_iter % accumulation_steps == 0:
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
@@ -193,6 +196,7 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
             torch.save(model.state_dict(), checkpoint_path)
         if n_iter % len(train_dataloader) == 0 :
             model.eval()
+            runing_loss = 0.0
             val_loss = 0.0
             correct = 0.0
             total = 0
