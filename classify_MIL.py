@@ -187,14 +187,15 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
             
         if (n_iter) % 100 == 0 :
             avg_loss = runing_loss / 100 
-            print(f"iter {n_iter} | Loss {avg_loss}")
+            print(f"Epoch {n_iter // len(train_dataloader) + 1}| iter {n_iter} | Loss {avg_loss}")
+            runing_loss = 0.0
+            
         if n_iter % (2 * len(train_dataloader)) == 0 :
             checkpoint_path = os.path.join(checkpoint_dir, 
                                            f'mil_vit_{n_iter/len(train_dataloader)}.pth')
             torch.save(model.state_dict(), checkpoint_path)
         if n_iter % len(train_dataloader) == 0 :
             model.eval()
-            runing_loss = 0.0
             val_loss = 0.0
             correct = 0.0
             total = 0
@@ -204,7 +205,7 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
                     label = label.to(device)
                     logits, _ = model(patches, chunk_size=32) 
                 
-                    loss = criterion(logits.squeeze(0), label.squeeze(0))
+                    loss = criterion(logits.squeeze(0), label)
                     val_loss += loss.item()
                     
                     
@@ -216,6 +217,9 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
                 avg_val_loss = val_loss / len(val_dataloader)
                 val_acc = (correct / total) * 100
                 print(f"Valid Loss : {avg_val_loss:.4f} | Valid accuracy : {val_acc:.2f}%" )
+            model.train()
+            runing_loss = 0.0
+    
     print("Create Bounding box")
     model.eval()
     patch_size = 224
@@ -237,10 +241,11 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
                 x_max = best_x + patch_size + padding
                 y_max = best_y + patch_size + padding
                 img = cv.imread(os.path.join(dir_img, image_path))
-                crop_img = img[y_min : y_max, x_min : x_max]
-                file_name = image_path.split(".")
-                new_file_name = f"{file_name[0]}_crop{file_name[1]}"
-                cv.imwrite(os.path.join(save_dir, new_file_name), crop_img)
+                if img is not None : 
+                    crop_img = img[y_min : y_max, x_min : x_max]
+                    file_name, ext = os.path.splitext(image_path)
+                    new_file_name = f"{file_name}_crop{ext}"
+                    cv.imwrite(os.path.join(save_dir, new_file_name), crop_img)
     extract_bbox(train_dataloader)
     extract_bbox(val_dataloader)
     extract_bbox(test_dataloader)
