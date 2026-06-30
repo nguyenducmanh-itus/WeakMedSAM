@@ -171,17 +171,14 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
         if patches.size(0) > MAX_PATCHES : 
             indices = torch.randperm(patches.size(0), device=device)[MAX_PATCHES]
             patches = patches[indices]
-        #print_memory("Memory after load data")
+        print(patches.shape)
         patches = patches.to(device) 
         label = label.to(device)     
-        
         logits, _ = model(patches, chunk_size=16)
-        #print_memory("Memory after load data to model")
         loss = criterion(logits.squeeze(0), label)
         runing_loss += loss.item()
         loss = loss / accumulation_steps
         loss.backward()
-        #print_memory("Memory after backward")
         if n_iter % accumulation_steps == 0:
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
