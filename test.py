@@ -1,7 +1,8 @@
 import pickle 
 from sklearn.cluster import KMeans
 from sklearn.exceptions import NotFittedError
-import numpy as np 
+import numpy as np
+import cv2 as cv
 import math
 import torch
 import torch.nn as nn
@@ -81,6 +82,4 @@ from samus.build_sam_us import samus_model_registry
 # new_img.show()
 
 
-pdm = tqdm(range(1, 10000), ncols=100)
-for n_iter in pdm :
-    print(n_iter)
+img = cv.imread("data/BTXRD/")

@@ -157,6 +157,7 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
     runing_loss = 0.0
     optimizer.zero_grad()
     for n_iter in pbar :
+        print(torch.cuda.memory_allocated()/1024**3)
         
         try : 
             patches, label, _, _ = next(train_loader_iter)
@@ -173,7 +174,7 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
         runing_loss += loss.item()
         loss = loss / accumulation_steps
         loss.backward()
-        
+        print(torch.cuda.memory_allocated()/1024**3)
         if n_iter % accumulation_steps == 0:
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
