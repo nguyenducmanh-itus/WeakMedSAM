@@ -170,7 +170,7 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
             patches, label, _, _ = next(train_loader_iter)
         
         if patches.size(0) > MAX_PATCHES : 
-            indices = torch.randperm(patches.size(0), device=device)[:MAX_PATCHES]
+            indices = torch.randperm(patches.size(0))[:MAX_PATCHES]
             patches = patches[indices]
         
         patches = patches.to(device) 
