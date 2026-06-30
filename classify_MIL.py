@@ -152,24 +152,24 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
     epochs = 10
     max_iters = epochs * len(train_dataloader)
     train_loader_iter = iter(train_dataloader)
-    batch_step = 0
     pbar = tqdm(range(1, max_iters + 1), ncols=100)
     runing_loss = 0.0
     optimizer.zero_grad()
     for n_iter in pbar :
-        print(torch.cuda.memory_allocated()/1024**3)
+        print(f"GPU memory before load to model {torch.cuda.memory_summary()}")
         
         try : 
             patches, label, _, _ = next(train_loader_iter)
-            
+            print(f"GPU memory after get dataloader : {torch.cuda.memory_summary()}")
         except :
             train_loader_iter = iter(train_dataloader)
             patches, label, _, _ = next(train_loader_iter)
-        
+            print(f"GPU memory after get dataloader : {torch.cuda.memory_summary()}")
         patches = patches.to(device) 
         label = label.to(device)     
         
         logits, _ = model(patches, chunk_size=16)
+        print(f"GPU memory after load to model : {torch.cuda.memory_summary()}")
         loss = criterion(logits.squeeze(0), label)
         runing_loss += loss.item()
         loss = loss / accumulation_steps
