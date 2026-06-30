@@ -11,9 +11,7 @@ from torch.utils.data import Dataset, DataLoader
 from attention_mil import AttentionMIL
 import argparse
 from tqdm import tqdm
-# =====================================================================
-# GIAI ĐOẠN 1: TẠO BAG (CẮT ẢNH VÀ LƯU PATCHES TENSOR)
-# =====================================================================
+
 def extract_and_save_bag_patches(image_path, label, save_dir, patch_size=224, stride=112):
     """
     Cut image to patchs by sliding widown with components : 
@@ -56,7 +54,15 @@ def extract_and_save_bag_patches(image_path, label, save_dir, patch_size=224, st
     }, save_path)
             
 
-    
+
+def print_memory(name):
+    torch.cuda.synchronize()
+    allocated = torch.cuda.memory_allocated() / 1024**2
+    reserved = torch.cuda.memory_reserved() / 1024**2
+    print(f"{name}")
+    print(f"Allocated : {allocated:.2f} MB")
+    print(f"Reserved  : {reserved:.2f} MB")
+    print()
 
 #Data Module for Bag dataset
 class BagDataset(Dataset):
@@ -96,7 +102,7 @@ class BagDataset(Dataset):
         return bag_tensor, torch.tensor([label], dtype=torch.float32), coords, img_path
             
 def collate_fn(batch):
-    # Trả về 1 ảnh duy nhất (với N patches) mỗi bước
+    
     patches, label, coords, img_path = batch[0]
     return patches, label, coords, img_path
 
@@ -105,7 +111,7 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
     os.makedirs(checkpoint_dir, exist_ok=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
-    
+    print("Memory when load model")
     model = AttentionMIL(num_classes=1, num_frozen_blocks=10).to(device)
     all_pt_files = [os.path.join(pt_dir, f) for f in os.listdir(pt_dir)]
     random.seed(42)
@@ -128,6 +134,7 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
     test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=True, 
                             collate_fn=collate_fn, num_workers=4)
     
+    print_memory("Memory after dataloader")
     vit_params = []
     head_params = []
     for name, param in model.named_parameters():
@@ -156,25 +163,22 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
     runing_loss = 0.0
     optimizer.zero_grad()
     for n_iter in pbar :
-        print(f"GPU memory before load to model {torch.cuda.memory_summary()}")
-        
         try : 
             patches, label, _, _ = next(train_loader_iter)
-            print(f"GPU memory after get dataloader : {torch.cuda.memory_summary()}")
         except :
             train_loader_iter = iter(train_dataloader)
             patches, label, _, _ = next(train_loader_iter)
-            print(f"GPU memory after get dataloader : {torch.cuda.memory_summary()}")
+        print_memory("Memory after load data")
         patches = patches.to(device) 
         label = label.to(device)     
         
         logits, _ = model(patches, chunk_size=16)
-        print(f"GPU memory after load to model : {torch.cuda.memory_summary()}")
+        print_memory("Memory after load data to model")
         loss = criterion(logits.squeeze(0), label)
         runing_loss += loss.item()
         loss = loss / accumulation_steps
         loss.backward()
-        print(torch.cuda.memory_allocated()/1024**3)
+        print_memory("Memory after backward")
         if n_iter % accumulation_steps == 0:
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
@@ -254,19 +258,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     path_img = args.data_path
     
-    # df = pd.read_excel(args.data_frame)
-    # for i in range(len(df)) :
-    #     img = df.loc[i, "image_id"]
-    #     label = df.loc[i, "tumor"]
-    #     format = img.split(".")
-    #     if format[1] == "jpg" :
-    #         img_path = f"{format[0]}.jpeg"
-    #     else :
-    #         img_path = img
-        
-    #     extract_and_save_bag_patches(os.path.join(path_img, img_path), 
-    #                                  label=label, 
-    #                                  save_dir=args.save_path)
     pseudo_boxes = train_and_extract_boxes(args.data_path, args.pt_dir, args.save_dir, \
         args.checkpoint_dir)
     #pass
