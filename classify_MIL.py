@@ -115,7 +115,8 @@ def train_and_extract_boxes(dir_img, current_epoch , pt_dir,
     #print("Memory when load model")
     model = AttentionMIL(num_classes=1, num_frozen_blocks=10).to(device)
     if check_point != "" :
-        model.load_state_dict(check_point)
+        ckpt = torch.load(check_point)
+        model.load_state_dict(ckpt)
     all_pt_files = [os.path.join(pt_dir, f) for f in os.listdir(pt_dir)]
     random.seed(42)
     random.shuffle(all_pt_files)

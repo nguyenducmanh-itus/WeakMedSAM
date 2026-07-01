@@ -80,3 +80,9 @@ from samus.build_sam_us import samus_model_registry
 
 # new_img.save("Mask.jpg")
 # new_img.show()
+from attention_mil import AttentionMIL
+checkpoint = torch.load("ckpt_mil/mil_vit_6.0.pth")
+model = AttentionMIL(1, 10)
+print(model.vit.encoder.layers.encoder_layer_10.ln_2.bias)
+model.load_state_dict(checkpoint)
+print(model.vit.encoder.layers.encoder_layer_10.ln_2.bias)
