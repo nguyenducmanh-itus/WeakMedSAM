@@ -80,6 +80,3 @@ from samus.build_sam_us import samus_model_registry
 
 # new_img.save("Mask.jpg")
 # new_img.show()
-
-
-indices = torch.randperm(15)[10]

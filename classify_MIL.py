@@ -106,13 +106,16 @@ def collate_fn(batch):
     patches, label, coords, img_path = batch[0]
     return patches, label, coords, img_path
 
-def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
+def train_and_extract_boxes(dir_img, current_epoch , pt_dir, 
+                            save_dir, checkpoint_dir, check_point):
     os.makedirs(save_dir, exist_ok=True)
     os.makedirs(checkpoint_dir, exist_ok=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     #print("Memory when load model")
     model = AttentionMIL(num_classes=1, num_frozen_blocks=10).to(device)
+    if check_point != "" :
+        model.load_state_dict(check_point)
     all_pt_files = [os.path.join(pt_dir, f) for f in os.listdir(pt_dir)]
     random.seed(42)
     random.shuffle(all_pt_files)
@@ -158,8 +161,9 @@ def train_and_extract_boxes(dir_img, pt_dir, save_dir, checkpoint_dir):
     model.train()
     epochs = 10
     max_iters = epochs * len(train_dataloader)
+    current_iters = current_epoch * len(train_dataloader)
     train_loader_iter = iter(train_dataloader)
-    pbar = tqdm(range(1, max_iters + 1), ncols=100)
+    pbar = tqdm(range(current_iters, max_iters + 1), ncols=100)
     runing_loss = 0.0
     optimizer.zero_grad()
     for n_iter in pbar :
