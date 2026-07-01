@@ -266,10 +266,12 @@ if __name__ == "__main__":
     parser.add_argument("--data_frame", type=str)
     parser.add_argument("--pt_dir", type=str)
     parser.add_argument("--checkpoint_dir", type=str)
+    parser.add_argument("--current_epoch", type=int)
+    parser.add_argument("--checkpoint", type=str)
     args = parser.parse_args()
     path_img = args.data_path
     
-    pseudo_boxes = train_and_extract_boxes(args.data_path, args.pt_dir, args.save_dir, \
-        args.checkpoint_dir)
+    pseudo_boxes = train_and_extract_boxes(args.data_path, args.current_epoch, args.pt_dir, 
+                                           args.save_dir, args.checkpoint_dir, args.checkpoint)
     #pass
                 
