@@ -80,9 +80,12 @@ from samus.build_sam_us import samus_model_registry
 
 # new_img.save("Mask.jpg")
 # new_img.show()
-from attention_mil import AttentionMIL
-checkpoint = torch.load("ckpt_mil/mil_vit_6.0.pth")
-model = AttentionMIL(1, 10)
-print(model.vit.encoder.layers.encoder_layer_10.ln_2.bias)
-model.load_state_dict(checkpoint)
-print(model.vit.encoder.layers.encoder_layer_10.ln_2.bias)
+img = cv.imread("data/BTXRD/images/IMG000001.jpeg")
+img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+h, w, _ = img.shape
+img_resize = cv.resize(img, (512, 512))
+bbx = [int(428 * (512 / w)), int(988 * (512 / h)), 
+       int(692 * (512 / w)), int(1252 * (512 / h))]
+cv.rectangle(img_resize, (bbx[0], bbx[1]), (bbx[2], bbx[3]), (0, 0, 255), 2)
+cv.imshow("Crop tumor", img_resize)
+cv.waitKey(0)

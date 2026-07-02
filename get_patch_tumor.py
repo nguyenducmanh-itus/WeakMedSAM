@@ -1,0 +1,80 @@
+from classify_MIL import BagDataset, collate_fn
+from attention_mil import AttentionMIL
+import argparse
+import os
+import torch
+from torch.utils.data import  DataLoader
+from tqdm import tqdm
+import cv2 as cv
+
+class LocalBagDataset(BagDataset) :
+    def __getitem__(self, idx):
+        data = torch.load(
+                self.pt_files[idx],
+                weights_only=False
+            )
+        img_path = data['image_path'].split("/")[-1]
+        coords = data['coords']
+        label = data['label']
+        img = cv.imread(os.path.join(self.dir_img, img_path))
+        img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+        patches = []
+        for x, y in coords:
+            patch = img[y:y+self.patch_size, x:x+self.patch_size]
+            patch_tensor = self.preprocess(patch)
+            patches.append(patch_tensor)
+            
+        bag_tensor = torch.stack(patches)
+        
+        return bag_tensor, torch.tensor([label], dtype=torch.float32), coords, img_path 
+
+if __name__ == "__main__" :
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--pt_dir", type = str)
+    parser.add_argument("--dir_img", type = str)
+    parser.add_argument("--model_ckpt", type = str)
+    parser.add_argument("--save_dir", type = str)
+    args = parser.parse_args()
+    print(args)
+    os.makedirs(args.save_dir, exist_ok=True)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = AttentionMIL()
+    checkpoint = torch.load(args.model_ckpt)
+    model.load_state_dict(checkpoint)
+    model = model.to(device)
+    model.eval()
+    all_pt_files = [os.path.join(args.pt_dir, f) for f in os.listdir(args.pt_dir)]
+    dataset = LocalBagDataset(args.dir_img, all_pt_files)
+    dataloader = DataLoader(dataset, batch_size=1, 
+                            collate_fn=collate_fn
+                            )
+    
+    padding = 20
+    patch_size = 224
+    pdm = tqdm((1, len(dataloader) + 1))
+    data_iter = iter(dataloader)
+    with torch.no_grad() :
+        for n_iter in pdm :
+            patches, label, coords, img_path = next(data_iter)
+            if label.item() == 0 :
+                continue
+            patches = patches.to(device)
+            _, A = model(patches, chunk_size=32) 
+            
+            best_patch_idx = torch.argmax(A, dim=1).item()
+            best_x, best_y = coords[best_patch_idx]
+            
+            x_min = max(0, best_x - padding)
+            y_min = max(0, best_y - padding)
+            x_max = best_x + patch_size + padding
+            y_max = best_y + patch_size + padding
+            print(f"Coordinates : {x_min, y_min, x_max, y_max}")
+            img_path = img_path.split("/")[-1]
+            img = cv.imread(os.path.join(args.dir_img, img_path))
+            if img is not None : 
+                crop_img = img[y_min : y_max, x_min : x_max]
+                file_name, ext = os.path.splitext(img_path)
+                new_file_name = f"{file_name}_crop{ext}"
+                cv.imwrite(os.path.join(args.save_dir, new_file_name), crop_img)
+    
+    

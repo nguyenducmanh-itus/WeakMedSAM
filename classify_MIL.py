@@ -66,11 +66,26 @@ def print_memory(name):
 
 #Data Module for Bag dataset
 class BagDataset(Dataset):
-    def __init__(self,dir_img, pt_file, patch_size=224):
+    def __init__(self,dir_img, pt_file, patch_size=224, is_train = True):
         self.pt_files = pt_file
         self.patch_size = patch_size
         self.dir_img = dir_img
-        self.preprocess = transforms.Compose([
+        self.is_train = is_train
+        self.preprocess_train = transforms.Compose([
+            transforms.ToPILImage(), 
+            
+            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.RandomVerticalFlip(p=0.5),
+            transforms.RandomRotation(degrees=15),
+        
+            transforms.ColorJitter(brightness=0.2, contrast=0.2), 
+            transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 2.0)), 
+            
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
+        self.preprocess_val = transforms.Compose([
+            transforms.ToPILImage(),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
@@ -86,15 +101,15 @@ class BagDataset(Dataset):
         img_path = data['image_path']
         coords = data['coords']
         label = data['label']
-        
-        
         img = cv.imread(os.path.join(self.dir_img, img_path))
         img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
-        
         patches = []
         for x, y in coords:
             patch = img[y:y+self.patch_size, x:x+self.patch_size]
-            patch_tensor = self.preprocess(patch)
+            if self.is_train:
+                patch_tensor = self.preprocess_train(patch)
+            else:
+                patch_tensor = self.preprocess_val(patch)
             patches.append(patch_tensor)
             
         bag_tensor = torch.stack(patches)
@@ -127,15 +142,15 @@ def train_and_extract_boxes(dir_img, current_epoch , pt_dir,
     val_files = all_pt_files[train_split:train_split+val_split]
     test_files = all_pt_files[train_split+val_split:]
     
-    train_dataset = BagDataset(dir_img, train_files)
-    val_dataset = BagDataset(dir_img, val_files)
-    test_dataset = BagDataset(dir_img, test_files)
+    train_dataset = BagDataset(dir_img, train_files, is_train=True)
+    val_dataset = BagDataset(dir_img, val_files, is_train=False)
+    test_dataset = BagDataset(dir_img, test_files, is_train=False)
     
     train_dataloader = DataLoader(train_dataset, batch_size=1, shuffle=True, 
                             collate_fn=collate_fn, num_workers=4) 
-    val_dataloader = DataLoader(val_dataset, batch_size=1, shuffle=True, 
+    val_dataloader = DataLoader(val_dataset, batch_size=1, shuffle=False, 
                             collate_fn=collate_fn, num_workers=4)
-    test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=True, 
+    test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False, 
                             collate_fn=collate_fn, num_workers=4)
     
     #print_memory("Memory after dataloader")
@@ -224,43 +239,12 @@ def train_and_extract_boxes(dir_img, current_epoch , pt_dir,
                 print(f"Valid Loss : {avg_val_loss:.4f} | Valid accuracy : {val_acc:.2f}%" )
             model.train()
             runing_loss = 0.0
-    
-    print("Create Bounding box")
-    model.eval()
-    patch_size = 224
-    padding = 20
-    def extract_bbox(loader) :
-        with torch.no_grad():
-            for patches, label, coords, image_path in loader:
-                if label.item() == 0: 
-                    continue
-                    
-                patches = patches.to(device)
-                _, A = model(patches, chunk_size=32) 
-                
-                best_patch_idx = torch.argmax(A, dim=1).item()
-                best_x, best_y = coords[best_patch_idx]
-                
-                x_min = max(0, best_x - padding)
-                y_min = max(0, best_y - padding)
-                x_max = best_x + patch_size + padding
-                y_max = best_y + patch_size + padding
-                img = cv.imread(os.path.join(dir_img, image_path))
-                if img is not None : 
-                    crop_img = img[y_min : y_max, x_min : x_max]
-                    file_name, ext = os.path.splitext(image_path)
-                    new_file_name = f"{file_name}_crop{ext}"
-                    cv.imwrite(os.path.join(save_dir, new_file_name), crop_img)
-    extract_bbox(train_dataloader)
-    extract_bbox(val_dataloader)
-    extract_bbox(test_dataloader)
           
             
      
     
 
 if __name__ == "__main__":
-    # Test chạy thử (Nhớ bỏ comment để chạy thật)
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_path", type=str)
     parser.add_argument("--save_dir", type=str)
