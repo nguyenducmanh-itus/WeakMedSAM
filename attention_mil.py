@@ -41,19 +41,12 @@ class ViTAttentionMIL(nn.Module):
             features.append(feat)
             
         h = torch.cat(features, dim=0) 
-        
-        
         A_V = self.attention_V(h)  
         A_U = self.attention_U(h)  
-        
-        
         A = self.attention_weights(A_V * A_U) 
-        
         A = torch.transpose(A, 1, 0)  
         A = F.softmax(A, dim=1)  
-        
         z = torch.mm(A, h)  
-        
         logits = self.classifier(z) 
         
         return logits, A

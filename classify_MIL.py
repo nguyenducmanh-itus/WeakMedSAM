@@ -8,7 +8,7 @@ import numpy as np
 import random
 from torchvision import models, transforms
 from torch.utils.data import Dataset, DataLoader
-from attention_mil import AttentionMIL
+from attention_mil import ViTAttentionMIL
 import argparse
 from tqdm import tqdm
 
@@ -128,7 +128,7 @@ def train_and_extract_boxes(dir_img, current_epoch , pt_dir,
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     #print("Memory when load model")
-    model = AttentionMIL(num_classes=1, num_frozen_blocks=10).to(device)
+    model = ViTAttentionMIL(num_classes=1, num_frozen_blocks=10).to(device)
     if check_point != "" :
         ckpt = torch.load(check_point)
         model.load_state_dict(ckpt)
