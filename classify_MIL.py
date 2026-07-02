@@ -177,7 +177,7 @@ def train_and_extract_boxes(dir_img, current_epoch , pt_dir,
     model.train()
     epochs = 10
     max_iters = epochs * len(train_dataloader)
-    current_iters = current_epoch * len(train_dataloader)
+    current_iters = current_epoch * len(train_dataloader) + 1
     train_loader_iter = iter(train_dataloader)
     pbar = tqdm(range(current_iters, max_iters + 1), ncols=100)
     runing_loss = 0.0
