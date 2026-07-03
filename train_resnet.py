@@ -165,7 +165,7 @@ def train_model_from_excel(excel_path, img_dir, num_epochs=15, batch_size=16, le
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--excel_path", type=str)
-    parser.add_argument("--img_dir", type=int)
+    parser.add_argument("--img_dir", type=str)
     args = parser.parse_args()
     # THAY ĐỔI ĐƯỜNG DẪN TẠI ĐÂY
     # EXCEL_PATH = "data/BTXRD/dataset.xlsx" 
