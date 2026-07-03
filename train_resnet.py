@@ -8,7 +8,7 @@ import os
 import copy
 from PIL import Image
 from sklearn.model_selection import train_test_split
-
+import argparse
 # ==========================================
 # 1. Định nghĩa Custom Dataset
 # ==========================================
@@ -163,12 +163,16 @@ def train_model_from_excel(excel_path, img_dir, num_epochs=15, batch_size=16, le
 # CÁCH CHẠY
 # ==========================================
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--excel_path", type=str)
+    parser.add_argument("--img_dir", type=int)
+    args = parser.parse_args()
     # THAY ĐỔI ĐƯỜNG DẪN TẠI ĐÂY
-    EXCEL_PATH = "data/BTXRD/dataset.xlsx" 
-    IMG_DIR = "data/BTXRD/images"   
+    # EXCEL_PATH = "data/BTXRD/dataset.xlsx" 
+    # IMG_DIR = "data/BTXRD/images"   
     trained_model = train_model_from_excel(
-        excel_path=EXCEL_PATH, 
-        img_dir=IMG_DIR, 
+        excel_path=args.excel_path, 
+        img_dir=args.img_dir, 
         num_epochs=15,
         batch_size=16,
         learning_rate=1e-4
