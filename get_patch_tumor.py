@@ -21,7 +21,7 @@ class LocalBagDataset(BagDataset) :
         patches = []
         for x, y in coords:
             patch = img[y:y+self.patch_size, x:x+self.patch_size]
-            patch_tensor = self.preprocess(patch)
+            patch_tensor = self.preprocess_val(patch)
             patches.append(patch_tensor)
             
         bag_tensor = torch.stack(patches)

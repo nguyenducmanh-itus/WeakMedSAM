@@ -80,6 +80,15 @@ from samus.build_sam_us import samus_model_registry
 
 # new_img.save("Mask.jpg")
 # new_img.show()
-test = torch.load("output_patch_image/IMG000001.pt", 
-                  weights_only=False)
-print(test["image_path"])
+img = cv.imread("data/BTXRD/images/IMG000002.jpeg")
+img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+h, w, _ = img.shape
+img_resize = cv.resize(img, (512, 512))
+bbx = [540, 2444, 804, 2708]
+resize_h, resize_w = 512 / h, 512 / w
+x1, y1, x2, y2 = int(bbx[0] * resize_w), int(bbx[1] * resize_h), int(bbx[2] * resize_w), int(bbx[3] * resize_h)
+print(x1, y1, x2, y2)
+img_resize = cv.rectangle(img_resize, (x1, y1), (x2, y2), (0, 0, 255), 5)
+cv.imshow("Bounding box", img_resize)
+cv.waitKey(0)
+
