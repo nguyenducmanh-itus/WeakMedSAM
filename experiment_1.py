@@ -129,7 +129,7 @@ if __name__ == "__main__":
             print(f"Cắt thành công ROI tại tọa độ gốc: {bbox}")
             # Lưu lại để đưa vào Bước 3 (WeakMedSAM)
             image_path_split = image_path.split("/")
-            img_id = image_path_split[-1]
+            img_id = image_path_split[-1].split(".")
             image_name = f"{img_id[0]}_crop.{img_id[1]}"
             bbx_map[img_id] = bbox
             cv2.imwrite(os.path.join(args.save_dir, image_name), cropped_image)
