@@ -130,7 +130,7 @@ if __name__ == "__main__":
             image_path_split = image_path.split("/")
             img_id = image_path_split[-1].split(".")
             image_name = f"{img_id[0]}_crop.{img_id[1]}"
-            bbx_map[img_id] = bbox
+            bbx_map[img_id[0]] = bbox
             cv2.imwrite(os.path.join(args.save_dir, image_name), cropped_image)
     filehanlder = open(args.save_bbox, 'wb')
     pickle.dump(bbx_map, filehanlder)
