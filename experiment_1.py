@@ -83,10 +83,9 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = models.resnet18(pretrained=False)
     model.fc = torch.nn.Linear(model.fc.in_features, 2) # 2 class: Bình thường / Có u
-    save_dir = "Crop_images"
     bbx_map = {}
     # Tải weights bạn đã train vào đây
-    model.load_state_dict(torch.load('model/resnet18_tumor_classifier.pth'))
+    model.load_state_dict(torch.load(args.model_ckpt))
     model = model.to(device)
     model.eval()
     
@@ -136,3 +135,4 @@ if __name__ == "__main__":
     filehanlder = open(args.save_bbox, 'wb')
     pickle.dump(bbx_map, filehanlder)
     
+
