@@ -1,10 +1,12 @@
 import cv2
+import os
 import torch
 import numpy as np
 from torchvision import models, transforms
 from pytorch_grad_cam import GradCAM
 from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
-
+import argparse
+import pickle 
 def get_gradcam_heatmap(model, input_tensor, target_layer):
     """
     Bước 1: Trích xuất Heatmap từ mạng CNN phân loại thô
@@ -69,13 +71,22 @@ def extract_roi_and_crop(orig_image_path, heatmap, resize_dim=(256, 256), thresh
 # ================= CÁCH SỬ DỤNG =================
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--save_dir", type =str)
+    parser.add_argument("--dir_path", type = str)
+    parser.add_argument("--model_ckpt", type = str)
+    parser.add_argument("--save_bbox", type = str)
+    args = parser.parse_args()
+    os.makedirs(args.save_dir, exist_ok=True)
+    os.makedirs(args.save_bbox, exist_ok=True)
     # 1. Setup mô hình ResNet18 (Thay bằng model bạn đã train để phân loại u/không u)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = models.resnet18(pretrained=False)
     model.fc = torch.nn.Linear(model.fc.in_features, 2) # 2 class: Bình thường / Có u
-    
+    save_dir = "Crop_images"
+    bbx_map = {}
     # Tải weights bạn đã train vào đây
-    # model.load_state_dict(torch.load('resnet18_xray_classifier.pth'))
+    model.load_state_dict(torch.load('model/resnet18_tumor_classifier.pth'))
     model = model.to(device)
     model.eval()
     
@@ -83,7 +94,9 @@ if __name__ == "__main__":
     target_layer = model.layer4[-1]
     
     # 2. Chuẩn bị ảnh đầu vào
-    image_path = "path_to_your_btrxd_image.jpg"
+   
+    list_images = [os.path.join(args.dir_path, f) for f in os.listdir(args.dir_path)]
+    
     
     # Transform chuẩn của torchvision
     transform = transforms.Compose([
@@ -92,27 +105,34 @@ if __name__ == "__main__":
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
+    for image_path in list_images : 
+        # Đọc và biến đổi ảnh thành tensor
+        img_cv = cv2.imread(image_path)
+        img_cv_rgb = cv2.cvtColor(img_cv, cv2.COLOR_BGR2RGB)
+        input_tensor = transform(img_cv_rgb).unsqueeze(0).to(device)
+        
+        # 3. Thực thi Pipeline
+        # Lấy Heatmap
+        heatmap = get_gradcam_heatmap(model, input_tensor, target_layer)
+        
+        # Cắt ROI từ ảnh gốc
+        result = extract_roi_and_crop(
+            orig_image_path=image_path,
+            heatmap=heatmap,
+            resize_dim=(256, 256),
+            threshold=0.6, 
+            padding=50     # Mở rộng 50 pixel mỗi viền
+        )
+        
+        if result is not None:
+            cropped_image, bbox = result
+            print(f"Cắt thành công ROI tại tọa độ gốc: {bbox}")
+            # Lưu lại để đưa vào Bước 3 (WeakMedSAM)
+            image_path_split = image_path.split("/")
+            img_id = image_path_split[-1]
+            image_name = f"{img_id[0]}_crop.{img_id[1]}"
+            bbx_map[img_id] = bbox
+            cv2.imwrite(os.path.join(args.save_dir, image_name), cropped_image)
+    filehanlder = open(args.save_bbox, 'wb')
+    pickle.dump(bbx_map, filehanlder)
     
-    # Đọc và biến đổi ảnh thành tensor
-    img_cv = cv2.imread(image_path)
-    img_cv_rgb = cv2.cvtColor(img_cv, cv2.COLOR_BGR2RGB)
-    input_tensor = transform(img_cv_rgb).unsqueeze(0).to(device)
-    
-    # 3. Thực thi Pipeline
-    # Lấy Heatmap
-    heatmap = get_gradcam_heatmap(model, input_tensor, target_layer)
-    
-    # Cắt ROI từ ảnh gốc
-    result = extract_roi_and_crop(
-        orig_image_path=image_path,
-        heatmap=heatmap,
-        resize_dim=(256, 256),
-        threshold=0.6, # Bạn có thể tinh chỉnh ngưỡng này (0.0 -> 1.0)
-        padding=50     # Mở rộng 50 pixel mỗi viền
-    )
-    
-    if result is not None:
-        cropped_image, bbox = result
-        print(f"Cắt thành công ROI tại tọa độ gốc: {bbox}")
-        # Lưu lại để đưa vào Bước 3 (WeakMedSAM)
-        cv2.imwrite("roi_for_sam.jpg", cropped_image)
