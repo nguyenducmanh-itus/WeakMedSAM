@@ -46,7 +46,7 @@ class BoneTumorDataset(Dataset):
 # ==========================================
 # 2. Hàm Huấn luyện chính
 # ==========================================
-def train_model_from_excel(excel_path, img_dir, num_epochs=15, batch_size=16, learning_rate=1e-4):
+def train_model_from_excel(excel_path, save_dir , img_dir, num_epochs=15, batch_size=16, learning_rate=1e-4):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Đang huấn luyện trên thiết bị: {device}")
 
@@ -145,7 +145,7 @@ def train_model_from_excel(excel_path, img_dir, num_epochs=15, batch_size=16, le
 
     print(f'\nHuấn luyện hoàn tất. Best Val Acc: {best_acc:4f}')
     model.load_state_dict(best_model_wts)
-    save_dir = "/kaggle/worker/model"
+    
     save_path = os.path.join(save_dir, "resnet18_tumor_classifier.pth")
     
     # 2. Kiểm tra và tạo thư mục nếu chưa tồn tại
@@ -166,12 +166,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--excel_path", type=str)
     parser.add_argument("--img_dir", type=str)
+    parser.add_argument("--save_dir", type=str)
     args = parser.parse_args()
     # THAY ĐỔI ĐƯỜNG DẪN TẠI ĐÂY
     # EXCEL_PATH = "data/BTXRD/dataset.xlsx" 
     # IMG_DIR = "data/BTXRD/images"   
     trained_model = train_model_from_excel(
-        excel_path=args.excel_path, 
+        excel_path=args.excel_path,
+        save_dir=args.save_dir,  
         img_dir=args.img_dir, 
         num_epochs=15,
         batch_size=16,
