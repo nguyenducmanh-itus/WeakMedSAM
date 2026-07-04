@@ -190,8 +190,26 @@ def train_and_extract_boxes(dir_img, current_epoch , pt_dir,
             patches, label, _, _ = next(train_loader_iter)
         
         if patches.size(0) > MAX_PATCHES : 
-            indices = torch.randperm(patches.size(0))[:MAX_PATCHES]
-            patches = patches[indices]
+            model.eval()
+            with torch.no_grad() :
+                _, A_draft = model(patches.to(device), chunk_size=16) 
+            model.train()
+            A_draft = A_draft.squeeze(0)
+            num_keep_top = min(16, patches.size(0))
+            _, top_indices = torch.topk(A_draft, num_keep_top)
+            top_indices_cpu = top_indices.cpu()
+            
+            # Bước 3: Lấy ngẫu nhiên phần còn lại để điền cho đủ 64
+            remaining_k = MAX_PATCHES - num_keep_top
+            all_indices = set(range(patches.size(0)))
+            top_set = set(top_indices_cpu.numpy())
+            remaining_pool = list(all_indices - top_set)
+            
+            random_indices = torch.tensor(random.sample(remaining_pool, remaining_k))
+            
+            # Bước 4: Gộp lại thành batch 64 patches hoàn chỉnh
+            final_indices = torch.cat([top_indices_cpu, random_indices])
+            patches = patches[final_indices]
         
         patches = patches.to(device) 
         label = label.to(device)     
