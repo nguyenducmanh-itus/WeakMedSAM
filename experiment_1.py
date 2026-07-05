@@ -119,7 +119,7 @@ if __name__ == "__main__":
             orig_image_path=image_path,
             heatmap=heatmap,
             resize_dim=(256, 256),
-            threshold=0.6, 
+            threshold=0.4, 
             padding=50     # Mở rộng 50 pixel mỗi viền
         )
         
