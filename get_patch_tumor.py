@@ -6,7 +6,7 @@ import torch
 from torch.utils.data import  DataLoader
 from tqdm import tqdm
 import cv2 as cv
-
+import pickle
 class LocalBagDataset(BagDataset) :
     def __getitem__(self, idx):
         data = torch.load(
@@ -34,6 +34,7 @@ if __name__ == "__main__" :
     parser.add_argument("--dir_img", type = str)
     parser.add_argument("--model_ckpt", type = str)
     parser.add_argument("--save_dir", type = str)
+    parser.add_argument("--save_bbox", type = str)
     args = parser.parse_args()
     print(args)
     os.makedirs(args.save_dir, exist_ok=True)
@@ -43,6 +44,7 @@ if __name__ == "__main__" :
     model.load_state_dict(checkpoint)
     model = model.to(device)
     model.eval()
+    bbox_map = {}
     all_pt_files = [os.path.join(args.pt_dir, f) for f in os.listdir(args.pt_dir)]
     dataset = LocalBagDataset(args.dir_img, all_pt_files)
     dataloader = DataLoader(dataset, batch_size=1, 
@@ -68,7 +70,6 @@ if __name__ == "__main__" :
             y_min = max(0, best_y - padding)
             x_max = best_x + patch_size + padding
             y_max = best_y + patch_size + padding
-            print(f"Coordinates : {x_min, y_min, x_max, y_max}")
             img_path = img_path.split("/")[-1]
             img = cv.imread(os.path.join(args.dir_img, img_path))
             if img is not None : 
@@ -76,5 +77,8 @@ if __name__ == "__main__" :
                 file_name, ext = os.path.splitext(img_path)
                 new_file_name = f"{file_name}_crop{ext}"
                 cv.imwrite(os.path.join(args.save_dir, new_file_name), crop_img)
-    
+                bbox_map[file_name] = [x_min, y_min, x_max, y_max]
+    with open(args.save_bbox, 'wb') as f :
+        pickle.dump(bbox_map, f)
+
     
