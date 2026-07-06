@@ -1,6 +1,9 @@
 import torch
 
-file = torch.load("output_patch_image/IMG000001.pt", 
-                  weights_only=False)
+my_list = [1, 2, 3, 4, 5, 6]
+for i in my_list :
+    if i < 3 :
+        continue
 
-print(file["image_path"])
+    else :
+        print(i)

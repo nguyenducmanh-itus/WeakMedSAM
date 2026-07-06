@@ -61,6 +61,7 @@ if __name__ == "__main__" :
             patches, label, coords, img_path = next(data_iter)
             if label.item() == 0 :
                 continue
+            print(img_path.split("/")[-1])
             patches = patches.to(device)
             _, A = model(patches, chunk_size=32) 
             
