@@ -47,7 +47,7 @@ if __name__ == "__main__" :
     bbox_map = {}
     all_pt_files = [os.path.join(args.pt_dir, f) for f in os.listdir(args.pt_dir)]
     print(all_pt_files)
-    dataset = LocalBagDataset(args.dir_img, all_pt_files)
+    dataset = LocalBagDataset(args.dir_img, all_pt_files, is_train=False)
     dataloader = DataLoader(dataset, batch_size=1, 
                             collate_fn=collate_fn
                             )
