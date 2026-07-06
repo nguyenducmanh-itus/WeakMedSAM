@@ -71,7 +71,7 @@ if __name__ == "__main__" :
             y_min = max(0, best_y - padding)
             x_max = best_x + patch_size + padding
             y_max = best_y + patch_size + padding
-            img_id = img_path.split("/")
+            img_id = img_path.split("/")[-1]
             idx, ext = os.path.splitext(img_id)
             img = cv.imread(img_path)
             if img is not None : 
