@@ -46,6 +46,7 @@ if __name__ == "__main__" :
     model.eval()
     bbox_map = {}
     all_pt_files = [os.path.join(args.pt_dir, f) for f in os.listdir(args.pt_dir)]
+    print(all_pt_files)
     dataset = LocalBagDataset(args.dir_img, all_pt_files)
     dataloader = DataLoader(dataset, batch_size=1, 
                             collate_fn=collate_fn
@@ -78,6 +79,8 @@ if __name__ == "__main__" :
                 new_file_name = f"{file_name}_crop{ext}"
                 cv.imwrite(os.path.join(args.save_dir, new_file_name), crop_img)
                 bbox_map[file_name] = [x_min, y_min, x_max, y_max]
+            else : 
+                print("None iamge")
     with open(args.save_bbox, 'wb') as f :
         pickle.dump(bbox_map, f)
 
