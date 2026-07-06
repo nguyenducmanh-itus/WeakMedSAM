@@ -1,6 +1,6 @@
-import os
+import torch
 
-text = "String.txt"
+file = torch.load("output_patch_image/IMG000001.pt", 
+                  weights_only=False)
 
-text, ext = os.path.splitext(text)
-print(text, ext)
+print(file["image_path"])

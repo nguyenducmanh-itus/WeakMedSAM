@@ -13,10 +13,10 @@ class LocalBagDataset(BagDataset) :
                 self.pt_files[idx],
                 weights_only=False
             )
-        img_path = data['image_path'].split("/")[-1]
+        img_path = data['image_path']
         coords = data['coords']
         label = data['label']
-        img = cv.imread(os.path.join(self.dir_img, img_path))
+        img = cv.imread(img_path)
         img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
         patches = []
         for x, y in coords:
@@ -70,11 +70,11 @@ if __name__ == "__main__" :
             y_min = max(0, best_y - padding)
             x_max = best_x + patch_size + padding
             y_max = best_y + patch_size + padding
-            img_path = img_path.split("/")[-1]
-            img = cv.imread(os.path.join(args.dir_img, img_path))
+            img_split = img_path.split("/")[-1]
+            img = cv.imread(img_path)
             if img is not None : 
                 crop_img = img[y_min : y_max, x_min : x_max]
-                file_name, ext = os.path.splitext(img_path)
+                file_name, ext = os.path.splitext(img_split)
                 new_file_name = f"{file_name}_crop{ext}"
                 cv.imwrite(os.path.join(args.save_dir, new_file_name), crop_img)
                 bbox_map[file_name] = [x_min, y_min, x_max, y_max]
