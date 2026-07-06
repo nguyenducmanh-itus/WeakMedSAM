@@ -46,22 +46,21 @@ if __name__ == "__main__" :
     model.eval()
     bbox_map = {}
     all_pt_files = [os.path.join(args.pt_dir, f) for f in os.listdir(args.pt_dir)]
-    print(all_pt_files)
     dataset = LocalBagDataset(args.dir_img, all_pt_files, is_train=False)
     dataloader = DataLoader(dataset, batch_size=1, 
                             collate_fn=collate_fn
                             )
-    
     padding = 20
     patch_size = 224
-    pdm = tqdm((1, len(dataloader) + 1))
+    pdm = tqdm(range(1, len(dataloader) + 1), ncols=100)
     data_iter = iter(dataloader)
     with torch.no_grad() :
         for n_iter in pdm :
             patches, label, coords, img_path = next(data_iter)
+            print(img_path)
             if label.item() == 0 :
                 continue
-            print(img_path.split("/")[-1])
+            
             patches = patches.to(device)
             _, A = model(patches, chunk_size=32) 
             
@@ -72,16 +71,17 @@ if __name__ == "__main__" :
             y_min = max(0, best_y - padding)
             x_max = best_x + patch_size + padding
             y_max = best_y + patch_size + padding
-            img_split = img_path.split("/")[-1]
+            img_id = img_path.split("/")
+            idx, ext = os.path.splitext(img_id)
             img = cv.imread(img_path)
             if img is not None : 
                 crop_img = img[y_min : y_max, x_min : x_max]
-                file_name, ext = os.path.splitext(img_split)
-                new_file_name = f"{file_name}_crop{ext}"
+                # file_name, ext = os.path.splitext(img_split)
+                new_file_name = f"{idx}_crop{ext}"
                 cv.imwrite(os.path.join(args.save_dir, new_file_name), crop_img)
-                bbox_map[file_name] = [x_min, y_min, x_max, y_max]
+                bbox_map[img_id] = [x_min, y_min, x_max, y_max]
             else : 
-                print("None iamge")
+                print("None image")
     with open(args.save_bbox, 'wb') as f :
         pickle.dump(bbox_map, f)
 

@@ -1,9 +1,5 @@
-import torch
+from tqdm import tqdm
 
-my_list = [1, 2, 3, 4, 5, 6]
-for i in my_list :
-    if i < 3 :
-        continue
-
-    else :
-        print(i)
+pdm = tqdm(range(1, 10000), ncols=100)
+for n in pdm : 
+    print(n)
