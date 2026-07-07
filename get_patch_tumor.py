@@ -13,10 +13,10 @@ class LocalBagDataset(BagDataset) :
                 self.pt_files[idx],
                 weights_only=False
             )
-        img_path = data['image_path']
+        img_path = data['image_path'].split("/")[-1]
         coords = data['coords']
         label = data['label']
-        img = cv.imread(img_path)
+        img = cv.imread(os.path.join(self.dir_img, img_path))
         img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
         patches = []
         for x, y in coords:
@@ -53,6 +53,7 @@ if __name__ == "__main__" :
     padding = 20
     patch_size = 224
     pdm = tqdm(range(1, len(dataloader) + 1), ncols=100)
+    print(f"Length of dataloader : {len(dataloader)}")
     data_iter = iter(dataloader)
     with torch.no_grad() :
         for n_iter in pdm :
@@ -71,15 +72,26 @@ if __name__ == "__main__" :
             y_min = max(0, best_y - padding)
             x_max = best_x + patch_size + padding
             y_max = best_y + patch_size + padding
-            img_id = img_path.split("/")[-1]
-            idx, ext = os.path.splitext(img_id)
-            img = cv.imread(img_path)
+            #img_id = img_path.split("/")[-1]
+            idx, ext = os.path.splitext(img_path)
+            img = cv.imread(os.path.join(args.dir_img, img_path))
             if img is not None : 
                 crop_img = img[y_min : y_max, x_min : x_max]
                 # file_name, ext = os.path.splitext(img_split)
                 new_file_name = f"{idx}_crop{ext}"
+                new_img = cv.resize(img.copy(), (512, 512))
+                h, w, _ = img.shape
+                resize_h = 512/ h
+                resize_w = 512 / w
+                x_min_resize = int(resize_w * x_min)
+                y_min_resize = int(resize_h * y_min)
+                x_max_resize = int(resize_w * x_max)
+                y_max_resize = int(resize_h * y_max)
+                cv.rectangle(new_img, (x_min_resize, y_min_resize), (x_max_resize, y_max_resize), (0, 255, 255), 2)
+                cv.imshow("Crop area", new_img)
+                cv.waitKey(0)
                 cv.imwrite(os.path.join(args.save_dir, new_file_name), crop_img)
-                bbox_map[img_id] = [x_min, y_min, x_max, y_max]
+                bbox_map[img_path] = [x_min, y_min, x_max, y_max]
             else : 
                 print("None image")
     with open(args.save_bbox, 'wb') as f :
