@@ -102,7 +102,7 @@ def remove_xray_text(image_path, save_path=None):
 if __name__ == "__main__":
     # Test thử trên bức ảnh bị vệt đen ở phiên bản trước
     save_dir = "/kaggle/working/Extract_text"
-    img_dir  = "/kaggle/"
+    img_dir  = "/kaggle/input/datasets/nguyenmanh0404/btxrd-datasets/images"
     os.makedirs(save_dir, exist_ok=True)
     img_list = [os.path.join(img_dir, f) for f in os.listdir(img_dir)]
     pdm = tqdm(range(1, len(img_list) + 1), ncols=100)
