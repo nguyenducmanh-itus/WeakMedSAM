@@ -11,6 +11,9 @@ from torch.utils.data import Dataset, DataLoader
 from attention_mil import ViTAttentionMIL
 import argparse
 from tqdm import tqdm
+from PIL import Image
+import matplotlib.pyplot as plt
+
 
 def extract_and_save_bag_patches(image_path, label, save_dir, patch_size=224, stride=112):
     """
@@ -101,9 +104,9 @@ class BagDataset(Dataset):
         img_path = data['image_path'].split("/")[-1]
         coords = data['coords']
         label = data['label']
-        extracted_img_path = os.path.join(self.dir_img, img_path)
+        img_visualize = np.asarray(Image.open(os.path.join(self.dir_img, img_path)))
+        imgplot = plt.imshow(img_visualize)
         img = cv.imread(os.path.join(self.dir_img, img_path))
-        print(f"Image path : {extracted_img_path}")
         img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
         patches = []
         for x, y in coords:
