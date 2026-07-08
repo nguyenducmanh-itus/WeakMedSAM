@@ -101,9 +101,10 @@ class BagDataset(Dataset):
         img_path = data['image_path'].split("/")[-1]
         coords = data['coords']
         label = data['label']
+        extracted_img_path = os.path.join(self.dir_img, img_path)
         img = cv.imread(os.path.join(self.dir_img, img_path))
+        print(f"Image path : {extracted_img_path}")
         img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
-        cv.imshow("Image", img)
         patches = []
         for x, y in coords:
             patch = img[y:y+self.patch_size, x:x+self.patch_size]
