@@ -104,8 +104,6 @@ class BagDataset(Dataset):
         img_path = data['image_path'].split("/")[-1]
         coords = data['coords']
         label = data['label']
-        img_visualize = np.asarray(Image.open(os.path.join(self.dir_img, img_path)))
-        imgplot = plt.imshow(img_visualize)
         img = cv.imread(os.path.join(self.dir_img, img_path))
         img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
         patches = []
