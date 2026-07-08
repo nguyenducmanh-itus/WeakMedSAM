@@ -187,12 +187,11 @@ def train_and_extract_boxes(dir_img, current_epoch , pt_dir,
     optimizer.zero_grad()
     for n_iter in pbar :
         try : 
-            patches, label, _, image_path = next(train_loader_iter)
+            patches, label, _, _ = next(train_loader_iter)
         except :
             train_loader_iter = iter(train_dataloader)
-            patches, label, _, image_path = next(train_loader_iter)
-        
-        print(image_path)
+            patches, label, _, _ = next(train_loader_iter)
+            
         if patches.size(0) > MAX_PATCHES : 
             model.eval()
             with torch.no_grad() :
