@@ -110,3 +110,5 @@ if __name__ == "__main__":
         cleaned_img = remove_xray_text(img_list[n_iter - 1], save_dir)
     
     print("Completed")
+    
+

@@ -90,7 +90,7 @@ if __name__ == "__main__" :
                 cv.rectangle(new_img, (x_min_resize, y_min_resize), (x_max_resize, y_max_resize), (0, 255, 255), 2)
                 cv.imshow("Crop area", new_img)
                 cv.waitKey(0)
-                cv.imwrite(os.path.join(args.save_dir, new_file_name), crop_img)
+                #cv.imwrite(os.path.join(args.save_dir, new_file_name), crop_img)
                 bbox_map[img_path] = [x_min, y_min, x_max, y_max]
             else : 
                 print("None image")

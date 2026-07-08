@@ -98,11 +98,12 @@ class BagDataset(Dataset):
                 self.pt_files[idx],
                 weights_only=False
             )
-        img_path = data['image_path']
+        img_path = data['image_path'].split("/")[-1]
         coords = data['coords']
         label = data['label']
         img = cv.imread(os.path.join(self.dir_img, img_path))
         img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+        cv.imshow("Image", img)
         patches = []
         for x, y in coords:
             patch = img[y:y+self.patch_size, x:x+self.patch_size]
@@ -199,15 +200,12 @@ def train_and_extract_boxes(dir_img, current_epoch , pt_dir,
             _, top_indices = torch.topk(A_draft, num_keep_top)
             top_indices_cpu = top_indices.cpu()
             
-            # Bước 3: Lấy ngẫu nhiên phần còn lại để điền cho đủ 64
             remaining_k = MAX_PATCHES - num_keep_top
             all_indices = set(range(patches.size(0)))
             top_set = set(top_indices_cpu.numpy())
             remaining_pool = list(all_indices - top_set)
             
             random_indices = torch.tensor(random.sample(remaining_pool, remaining_k))
-            
-            # Bước 4: Gộp lại thành batch 64 patches hoàn chỉnh
             final_indices = torch.cat([top_indices_cpu, random_indices])
             patches = patches[final_indices]
         
