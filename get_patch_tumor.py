@@ -64,7 +64,12 @@ if __name__ == "__main__" :
             
             patches = patches.to(device)
             _, A = model(patches, chunk_size=32) 
+            k = min(5, A.size(1))
             
+            topk_vals, topk_indices = torch.topk(A, k, dim=1)
+            selected_coords = [coords[idx.item()] for idx in topk_indices[0]]
+            clusters = [] # Danh sách chứa các cụm (mỗi cụm là 1 list tọa độ)
+            max_dist = patch_size * 1.5
             best_patch_idx = torch.argmax(A, dim=1).item()
             best_x, best_y = coords[best_patch_idx]
             

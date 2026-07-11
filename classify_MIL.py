@@ -178,7 +178,7 @@ def train_and_extract_boxes(dir_img, current_epoch , pt_dir,
     MAX_PATCHES = 64
     
     model.train()
-    epochs = 10
+    epochs = 20
     max_iters = epochs * len(train_dataloader)
     current_iters = current_epoch * len(train_dataloader) + 1
     train_loader_iter = iter(train_dataloader)
