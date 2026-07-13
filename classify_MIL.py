@@ -106,6 +106,7 @@ class BagDataset(Dataset):
         label = data['label']
         img = cv.imread(os.path.join(self.dir_img, img_path))
         img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+        img = cv.resize(img, (2048, 2048))
         patches = []
         for x, y in coords:
             patch = img[y:y+self.patch_size, x:x+self.patch_size]
@@ -192,24 +193,7 @@ def train_and_extract_boxes(dir_img, current_epoch , pt_dir,
             train_loader_iter = iter(train_dataloader)
             patches, label, _, _ = next(train_loader_iter)
             
-        if patches.size(0) > MAX_PATCHES : 
-            model.eval()
-            with torch.no_grad() :
-                _, A_draft = model(patches.to(device), chunk_size=16) 
-            model.train()
-            A_draft = A_draft.squeeze(0)
-            num_keep_top = min(16, patches.size(0))
-            _, top_indices = torch.topk(A_draft, num_keep_top)
-            top_indices_cpu = top_indices.cpu()
-            
-            remaining_k = MAX_PATCHES - num_keep_top
-            all_indices = set(range(patches.size(0)))
-            top_set = set(top_indices_cpu.numpy())
-            remaining_pool = list(all_indices - top_set)
-            
-            random_indices = torch.tensor(random.sample(remaining_pool, remaining_k))
-            final_indices = torch.cat([top_indices_cpu, random_indices])
-            patches = patches[final_indices]
+       
         
         patches = patches.to(device) 
         label = label.to(device)     
@@ -222,7 +206,7 @@ def train_and_extract_boxes(dir_img, current_epoch , pt_dir,
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
             optimizer.zero_grad()
-            
+            torch.cuda.empty_cache()
         if (n_iter) % 100 == 0 :
             avg_loss = runing_loss / 100 
             print(f"Epoch {n_iter // len(train_dataloader) + 1}| iter {n_iter} | Loss {avg_loss}")

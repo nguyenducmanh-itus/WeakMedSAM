@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
 from torchvision.models import vit_b_16, ViT_B_16_Weights
-
+from torch.utils.checkpoint import checkpoint
 class ViTAttentionMIL(nn.Module):
     def __init__(self, num_classes=1, num_frozen_blocks=10):
         super(ViTAttentionMIL, self).__init__()
@@ -37,9 +37,16 @@ class ViTAttentionMIL(nn.Module):
         features = []
         for i in range(0, patches.size(0), chunk_size):
             chunk = patches[i : i + chunk_size]
-            feat = self.vit(chunk) 
+            if self.training:
+                chunk.requires_grad_()
+                def custom_forward(x):
+                    return self.vit(x)
+                
+                feat = checkpoint(custom_forward, chunk, use_reentrant=False)
+            else:
+                feat = self.vit(chunk)
+                
             features.append(feat)
-            
         h = torch.cat(features, dim=0) 
         A_V = self.attention_V(h)  
         A_U = self.attention_U(h)  

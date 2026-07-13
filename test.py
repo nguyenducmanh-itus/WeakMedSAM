@@ -1,6 +1,7 @@
 import torch
+import pickle
 
-pt = torch.load("output_patch_image/IMG000001.pt", 
-                weights_only=False)
-
-print(pt["image_path"])
+with open("C:/Users/ADMIN/Downloads/mil_vit_8.0/mil_vit_8.0/data.pkl", "rb") as f :
+    files = pickle.load(f)
+    
+print(files)

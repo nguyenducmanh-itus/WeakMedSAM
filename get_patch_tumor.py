@@ -71,32 +71,57 @@ if __name__ == "__main__" :
             clusters = [] # Danh sách chứa các cụm (mỗi cụm là 1 list tọa độ)
             max_dist = patch_size * 1.5
             best_patch_idx = torch.argmax(A, dim=1).item()
-            best_x, best_y = coords[best_patch_idx]
             
-            x_min = max(0, best_x - padding)
-            y_min = max(0, best_y - padding)
-            x_max = best_x + patch_size + padding
-            y_max = best_y + patch_size + padding
-            #img_id = img_path.split("/")[-1]
+            clusters = []
+            for coord in selected_coords : 
+                cx, cy = coord
+                added = False
+                for cluster in clusters :
+                    for (bx, by) in cluster : 
+                        dist = ((cx - by) ** 2 + (cy - by)**2) **(0.5)
+                        if dist <= max_dist : 
+                            cluster.append(coord)
+                            added = True
+                            break
+                    if added : 
+                        break
+                if not added : 
+                    clusters.append([coord])
+                    
+            best_x, best_y = coords[best_patch_idx]
             idx, ext = os.path.splitext(img_path)
             img = cv.imread(os.path.join(args.dir_img, img_path))
-            if img is not None : 
-                crop_img = img[y_min : y_max, x_min : x_max]
-                # file_name, ext = os.path.splitext(img_split)
-                new_file_name = f"{idx}_crop{ext}"
-                new_img = cv.resize(img.copy(), (512, 512))
+            
+            #img_id = img_path.split("/")[-1]
+            
+            if img is not None :
                 h, w, _ = img.shape
-                resize_h = 512/ h
-                resize_w = 512 / w
-                x_min_resize = int(resize_w * x_min)
-                y_min_resize = int(resize_h * y_min)
-                x_max_resize = int(resize_w * x_max)
-                y_max_resize = int(resize_h * y_max)
-                cv.rectangle(new_img, (x_min_resize, y_min_resize), (x_max_resize, y_max_resize), (0, 255, 255), 2)
+                new_img = cv.resize(img.copy(), (512, 512))
+                new_file_name = f"{idx}_crop{ext}"
+                for cluster_idx, valid_coords in enumerate(clusters):
+                    global_min_x = min([c[0] for c in valid_coords])
+                    global_min_y = min([c[1] for c in valid_coords])
+                    global_max_x = max([c[0] for c in valid_coords]) + patch_size
+                    global_max_y = max([c[1] for c in valid_coords]) + patch_size
+                    
+                    # Thêm Padding và ràng buộc lề ảnh
+                    x_min = max(0, global_min_x - padding)
+                    y_min = max(0, global_min_y - padding)
+                    x_max = min(w, global_max_x + padding)
+                    y_max = min(h, global_max_y + padding) 
+                #crop_img = img[y_min : y_max, x_min : x_max]
+                # file_name, ext = os.path.splitext(img_split)
+                    resize_h = 512/ h
+                    resize_w = 512 / w
+                    x_min_resize = int(resize_w * x_min)
+                    y_min_resize = int(resize_h * y_min)
+                    x_max_resize = int(resize_w * x_max)
+                    y_max_resize = int(resize_h * y_max)
+                    cv.rectangle(new_img, (x_min_resize, y_min_resize), (x_max_resize, y_max_resize), (0, 255, 255), 2)
                 cv.imshow("Crop area", new_img)
                 cv.waitKey(0)
                 #cv.imwrite(os.path.join(args.save_dir, new_file_name), crop_img)
-                bbox_map[img_path] = [x_min, y_min, x_max, y_max]
+                #bbox_map[img_path] = [x_min, y_min, x_max, y_max]
             else : 
                 print("None image")
     with open(args.save_bbox, 'wb') as f :
