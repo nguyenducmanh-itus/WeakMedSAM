@@ -45,7 +45,6 @@ class ViTAttentionMIL(nn.Module):
                 feat = checkpoint(custom_forward, chunk, use_reentrant=False)
             else:
                 feat = self.vit(chunk)
-                
             features.append(feat)
         h = torch.cat(features, dim=0) 
         A_V = self.attention_V(h)  

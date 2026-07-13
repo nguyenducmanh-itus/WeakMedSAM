@@ -16,24 +16,15 @@ import matplotlib.pyplot as plt
 
 
 def extract_and_save_bag_patches(image_path, label, save_dir, patch_size=224, stride=112):
-    """
-    Cut image to patchs by sliding widown with components : 
-        - step = 112  
-        - size of batch is 224
-    """
     os.makedirs(save_dir, exist_ok=True)
-    
-    
-
     img = cv.imread(image_path)
     if img is None:
         print(f"Can't read image : {image_path}")
         return
         
     img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+    img = cv.resize(img, (2048, 2048))
     h, w, _ = img.shape
-
-    
     coords_list = []
 
     for y in range(0, h - patch_size + 1, stride):
@@ -56,16 +47,6 @@ def extract_and_save_bag_patches(image_path, label, save_dir, patch_size=224, st
         'image_path' : image_path
     }, save_path)
             
-
-
-def print_memory(name):
-    torch.cuda.synchronize()
-    allocated = torch.cuda.memory_allocated() / 1024**2
-    reserved = torch.cuda.memory_reserved() / 1024**2
-    print(f"{name}")
-    print(f"Allocated : {allocated:.2f} MB")
-    print(f"Reserved  : {reserved:.2f} MB")
-    print()
 
 #Data Module for Bag dataset
 class BagDataset(Dataset):
@@ -175,9 +156,7 @@ def train_and_extract_boxes(dir_img, current_epoch , pt_dir,
     ], weight_decay=1e-4)
     
     criterion = nn.BCEWithLogitsLoss()
-    accumulation_steps = 16 
-    MAX_PATCHES = 64
-    
+    accumulation_steps = 16     
     model.train()
     epochs = 20
     max_iters = epochs * len(train_dataloader)
@@ -257,8 +236,12 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint", type=str)
     args = parser.parse_args()
     path_img = args.data_path
-    
-    pseudo_boxes = train_and_extract_boxes(args.data_path, args.current_epoch, args.pt_dir, 
-                                           args.save_dir, args.checkpoint_dir, args.checkpoint)
+    df = pd.read_excel(args.data_frame)
+    img_list = [img for img in os.listdir(args.data_path)]
+    for img_idx, img in enumerate(img_list) :
+        label = df.loc[img_idx, "tumor"]
+        extract_and_save_bag_patches(img, label, args.save_dir)
+    # pseudo_boxes = train_and_extract_boxes(args.data_path, args.current_epoch, args.pt_dir, 
+    #                                        args.save_dir, args.checkpoint_dir, args.checkpoint)
     #pass
                 
