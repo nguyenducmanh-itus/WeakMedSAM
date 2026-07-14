@@ -235,13 +235,13 @@ if __name__ == "__main__":
     parser.add_argument("--current_epoch", type=int)
     parser.add_argument("--checkpoint", type=str)
     args = parser.parse_args()
-    path_img = args.data_path
-    df = pd.read_excel(args.data_frame)
-    img_list = [os.path.join(args.data_path, img) for img in os.listdir(args.data_path)]
-    for img_idx, img in enumerate(img_list) :
-        label = df.loc[img_idx, "tumor"]
-        extract_and_save_bag_patches(img, label, args.save_dir)
-    # pseudo_boxes = train_and_extract_boxes(args.data_path, args.current_epoch, args.pt_dir, 
-    #                                        args.save_dir, args.checkpoint_dir, args.checkpoint)
+    # path_img = args.data_path
+    # df = pd.read_excel(args.data_frame)
+    # img_list = [os.path.join(args.data_path, img) for img in os.listdir(args.data_path)]
+    # for img_idx, img in enumerate(img_list) :
+    #     label = df.loc[img_idx, "tumor"]
+    #     extract_and_save_bag_patches(img, label, args.save_dir)
+    pseudo_boxes = train_and_extract_boxes(args.data_path, args.current_epoch, args.pt_dir, 
+                                           args.save_dir, args.checkpoint_dir, args.checkpoint)
     #pass
                 
