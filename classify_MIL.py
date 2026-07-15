@@ -191,7 +191,7 @@ def train_and_extract_boxes(dir_img, current_epoch , pt_dir,
             print(f"Epoch {n_iter // len(train_dataloader) + 1}| iter {n_iter} | Loss {avg_loss}")
             runing_loss = 0.0
             
-        if n_iter % (2 * len(train_dataloader)) == 0 :
+        if n_iter % (len(train_dataloader)) == 0 :
             checkpoint_path = os.path.join(checkpoint_dir, 
                                            f'mil_vit_{n_iter/len(train_dataloader)}.pth')
             torch.save(model.state_dict(), checkpoint_path)
