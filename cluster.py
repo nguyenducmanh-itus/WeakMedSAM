@@ -42,12 +42,7 @@ if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpus
 
     os.makedirs(args.save_path, exist_ok=True)
-    #ResNet pre-trained in medical images 
-    resnet = resnet50(weights="DEFAULT").cuda()
-    # pre_resnet_path = 'Resnet50_medical.pt'
-    # state_dict = torch.load(pre_resnet_path)
-    # resnet.load_state_dict(state_dict, strict=False)
-    resnet.avgpool = nn.AdaptiveMaxPool2d((1, 1))
+    resnet = resnet18(weights="DEFAULT").cuda()
     resnet.fc = torch.nn.Identity()
     resnet.eval()
     data_module = importlib.import_module(f"{args.data_module}.dataset")

@@ -31,21 +31,16 @@ def no_aug(img: Image.Image, seg: Image.Image) :
 
 class BTXRD(Dataset) :
     def __init__(self, imgs, segs, df_path, train : bool, 
-                 part_child_classes : int, oc_child_classes : int,  
-                 part_cluster_file : str, oc_cluster_file : str) :
+                 child_classes : int, cluster_file : str) :
         super().__init__()
         self.imgs = imgs
         self.segs = segs
         self.df = pd.read_excel(df_path)
         self.train = train
-        if part_child_classes != 0 :
-            with open(part_cluster_file, "rb") as f_p : 
-                self.part_clab = pickle.load(f_p)
-        if oc_child_classes != 0 :
-            with open(oc_cluster_file, "rb") as f_oc :
-                self.oc_clab = pickle.load(f_oc)
-        self.part_child_classes = part_child_classes
-        self.oc_child_classes = oc_child_classes
+        if child_classes != 0 :
+            with open(cluster_file, "rb") as f : 
+                self.clab = pickle.load(f)
+        self.child_classes = child_classes
 
     def __len__(self) :
         return len(self.imgs)
@@ -61,9 +56,9 @@ class BTXRD(Dataset) :
         plab[0] = 1 if self.df.loc[index, "tumor"] == 1 else 0
         idx = self.imgs[index].split("/")
         idx = os.path.splitext(idx[-1])[0]
-        if self.oc_child_classes != 0 :
-            part_clab = torch.zeros(self.part_child_classes).float()
-            part_clab[int(self.part_clab[idx][0])] = 1
+        if self.child_classes != 0 :
+            clab = torch.zeros(self.child_classes *  + 1).float()
+            part_clab[int(self.clab[idx][0])] = 1
             oc_clab = torch.zeros(self.part_child_classes * self.oc_child_classes + 1).float()
             if plab[0] != 0 :
                 oc_clab[int(self.oc_clab[idx][0] * (self.part_clab[idx][0] + 1)) + 1] = 1
@@ -79,24 +74,7 @@ class BTXRD(Dataset) :
                 "fname" : self.imgs[index]
             }
                 
-        if self.part_child_classes != 0 : 
-            part_clab = torch.zeros(self.part_child_classes).float()
-            part_clab[int(self.part_clab[idx][0])] = 1
-            return {
-                "img" : img,
-                "plab" : plab,
-                "bone_clab" : part_clab, 
-                "seg" : seg,
-                "idx" : idx, 
-                "fname" : self.imgs[index]
-            }
-        return {
-            "img" : img, 
-            "plab" : plab,
-            "seg" : seg, 
-            "idx" : idx, 
-            "fname" : self.imgs[index]
-        }
+        
 
 def get_dataset(df_path, data_path : str, 
                 part_child_classes : int, oc_child_classes : int, 

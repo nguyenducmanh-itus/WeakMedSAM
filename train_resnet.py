@@ -145,7 +145,7 @@ def train_model_from_excel(excel_path, save_dir , img_dir, num_epochs=15, batch_
 
     print(f'\nHuấn luyện hoàn tất. Best Val Acc: {best_acc:4f}')
     model.load_state_dict(best_model_wts)
-    save_path = os.path.join(save_dir, "resnet18_tumor_classifier.pth")
+    save_path = os.path.join(save_dir, "resnet18_classifier.pth")
     
     # 2. Kiểm tra và tạo thư mục nếu chưa tồn tại
     if not os.path.exists(save_dir):
